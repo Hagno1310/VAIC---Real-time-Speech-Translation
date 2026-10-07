@@ -1,25 +1,19 @@
 /**
- * RttStack — luồng demo RTT 8 bước (rtt_hackathon.pen).
+ * TranslatorStack — luồng phiên dịch: chọn ngôn ngữ → lobby → lời mời → họp → kết thúc.
  * Lịch sử dịch là panel trong màn Meeting (không có màn riêng).
  */
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { Demo1Language } from '@/screens/rtt/Demo1Language';
-import { Demo2Devices } from '@/screens/rtt/Demo2Devices';
-import { Demo3Invite } from '@/screens/rtt/Demo3Invite';
-import { Demo4Meeting } from '@/screens/rtt/Demo4Meeting';
-import { Demo8EndSession } from '@/screens/rtt/Demo8EndSession';
-import type { RttStackParamList } from './rttTypes';
+import { DevicesScreen } from '@/screens/Devices';
+import { EndSessionScreen } from '@/screens/EndSession';
+import { InviteScreen } from '@/screens/Invite';
+import { LanguageScreen } from '@/screens/Language';
+import { MeetingScreen } from '@/screens/Meeting';
+import type { TranslatorStackParamList } from './types';
 
-const Stack = createNativeStackNavigator<RttStackParamList>();
+const Stack = createNativeStackNavigator<TranslatorStackParamList>();
 
-const LanguageScreen = Demo1Language;
-const DevicesScreen = Demo2Devices;
-const InviteScreen = Demo3Invite;
-const MeetingScreen = Demo4Meeting;
-const EndSessionScreen = Demo8EndSession;
-
-export function RttStack() {
+export function TranslatorStack() {
   return (
     <Stack.Navigator initialRouteName="Language" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Language" component={LanguageScreen} />

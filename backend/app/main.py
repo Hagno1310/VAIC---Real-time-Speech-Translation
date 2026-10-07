@@ -40,7 +40,11 @@ async def lifespan(_app: FastAPI):
     the same shared cache entry the warmup is filling. Cancelled on shutdown so
     a half-finished load never holds the process open.
     """
-    task = asyncio.create_task(run_warmup())
+    async def warm_then_announce() -> None:
+        await run_warmup()
+        await manager.broadcast("server.ready", {})  # clients waiting on a cold server
+
+    task = asyncio.create_task(warm_then_announce())
     try:
         yield
     finally:

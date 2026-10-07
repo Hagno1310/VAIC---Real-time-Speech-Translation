@@ -36,7 +36,7 @@ export interface RttDict {
     /** Tiêu đề "Lịch sử dịch". */
     historyTitle: string;
   };
-  demo1: {
+  language: {
     title: string;
     subtitle: string;
     deviceNameLabel: string;
@@ -47,7 +47,7 @@ export interface RttDict {
     hideBackend: string;
     wsHint: string;
   };
-  demo2: {
+  devices: {
     otherDevices: (n: number) => string;
     yourDevice: (label: string) => string;
     changeLangHint: string;
@@ -66,7 +66,7 @@ export interface RttDict {
     cancel: string;
     inviteAnyway: string;
   };
-  demo3: {
+  invite: {
     title: string;
     receiverTag: string;
     wantsToConnect: (name: string) => string;
@@ -77,7 +77,7 @@ export interface RttDict {
     waitingAccept: string;
     back: string;
   };
-  demo4: {
+  meeting: {
     sendingTo: (name: string) => string;
     youJustSpoke: string;
     listeningTo: (name: string) => string;
@@ -102,7 +102,7 @@ export interface RttDict {
     close: string;
     emptyHistory: string;
   };
-  demo8: {
+  endSession: {
     durationLabel: string;
     sentencesLabel: string;
     participantsLabel: string;
@@ -118,6 +118,7 @@ export interface RttDict {
     peerDisconnected: string;
     roomClosed: string;
     wsError: string;
+    wsUrlHint: string;
     notConnected: string;
   };
 }
@@ -134,7 +135,7 @@ export const rttText: Record<UiLang, RttDict> = {
       defaultDeviceName: 'Thiết bị của tôi',
       historyTitle: 'Lịch sử dịch',
     },
-    demo1: {
+    language: {
       title: 'Chọn ngôn ngữ của bạn',
       subtitle: 'Ngôn ngữ này được lưu trên thiết bị và dùng làm mặc định cho các phiên họp.',
       deviceNameLabel: 'Tên thiết bị của bạn',
@@ -145,7 +146,7 @@ export const rttText: Record<UiLang, RttDict> = {
       hideBackend: 'Ẩn cài đặt backend',
       wsHint: 'WebSocket URL (thiết bị thật: dùng IP LAN, vd ws://192.168.1.x:8000/ws)',
     },
-    demo2: {
+    devices: {
       otherDevices: (n) => `${n} thiết bị khác`,
       yourDevice: (label) => `Thiết bị của bạn · ${label}`,
       changeLangHint: 'Chọn nhầm? Bấm VI/EN để đổi ngôn ngữ của bạn — máy khác sẽ tự cập nhật.',
@@ -165,7 +166,7 @@ export const rttText: Record<UiLang, RttDict> = {
       cancel: 'Huỷ',
       inviteAnyway: 'Vẫn mời',
     },
-    demo3: {
+    invite: {
       title: 'Lời mời kết nối',
       receiverTag: 'PHÍA NHẬN',
       wantsToConnect: (name) => `“${name}” muốn kết nối`,
@@ -177,7 +178,7 @@ export const rttText: Record<UiLang, RttDict> = {
       waitingAccept: 'Đang chờ chấp nhận…',
       back: 'Quay lại',
     },
-    demo4: {
+    meeting: {
       sendingTo: (name) => `Đang gửi tới ${name}`,
       youJustSpoke: 'Bạn vừa nói',
       listeningTo: (name) => `Đang nghe ${name}`,
@@ -203,7 +204,7 @@ export const rttText: Record<UiLang, RttDict> = {
       close: 'Đóng',
       emptyHistory: 'Chưa có câu nào trong phiên.',
     },
-    demo8: {
+    endSession: {
       durationLabel: 'Thời lượng',
       sentencesLabel: 'Câu đã dịch',
       participantsLabel: 'Người tham gia',
@@ -218,6 +219,7 @@ export const rttText: Record<UiLang, RttDict> = {
       peerDisconnected: 'Đối tác đã rời hoặc mất kết nối.',
       roomClosed: 'Phòng đã đóng.',
       wsError: 'Lỗi kết nối WebSocket tới backend.',
+      wsUrlHint: 'Kiểm tra WS URL trong “Cài đặt backend”: ws://<IP-LAN>:8000/ws, hoặc wss://<tunnel-8000>/ws khi mở app qua https/devtunnel.',
       notConnected: 'Chưa kết nối tới backend. Bấm “Kết nối” trước.',
     },
   },
@@ -232,7 +234,7 @@ export const rttText: Record<UiLang, RttDict> = {
       defaultDeviceName: 'My device',
       historyTitle: 'Translation history',
     },
-    demo1: {
+    language: {
       title: 'Choose your language',
       subtitle: 'This language is saved on your device and used as the default for meetings.',
       deviceNameLabel: 'Your device name',
@@ -243,7 +245,7 @@ export const rttText: Record<UiLang, RttDict> = {
       hideBackend: 'Hide backend settings',
       wsHint: 'WebSocket URL (real devices: use the LAN IP, e.g. ws://192.168.1.x:8000/ws)',
     },
-    demo2: {
+    devices: {
       otherDevices: (n) => `${n} other devices`,
       yourDevice: (label) => `Your device · ${label}`,
       changeLangHint: 'Picked the wrong one? Tap VI/EN to change your language — other devices update automatically.',
@@ -263,7 +265,7 @@ export const rttText: Record<UiLang, RttDict> = {
       cancel: 'Cancel',
       inviteAnyway: 'Invite anyway',
     },
-    demo3: {
+    invite: {
       title: 'Connection invite',
       receiverTag: 'RECEIVING',
       wantsToConnect: (name) => `“${name}” wants to connect`,
@@ -275,7 +277,7 @@ export const rttText: Record<UiLang, RttDict> = {
       waitingAccept: 'Waiting for acceptance…',
       back: 'Back',
     },
-    demo4: {
+    meeting: {
       sendingTo: (name) => `Sending to ${name}`,
       youJustSpoke: 'You just spoke',
       listeningTo: (name) => `Listening to ${name}`,
@@ -301,7 +303,7 @@ export const rttText: Record<UiLang, RttDict> = {
       close: 'Close',
       emptyHistory: 'No sentences in this session yet.',
     },
-    demo8: {
+    endSession: {
       durationLabel: 'Duration',
       sentencesLabel: 'Sentences translated',
       participantsLabel: 'Participants',
@@ -316,6 +318,7 @@ export const rttText: Record<UiLang, RttDict> = {
       peerDisconnected: 'Partner left or lost connection.',
       roomClosed: 'The room was closed.',
       wsError: 'WebSocket connection error to the backend.',
+      wsUrlHint: 'Check the WS URL in “Backend settings”: ws://<LAN-IP>:8000/ws, or wss://<tunnel-8000>/ws when the app is opened over https/devtunnel.',
       notConnected: 'Not connected to the backend. Tap “Connect” first.',
     },
   },

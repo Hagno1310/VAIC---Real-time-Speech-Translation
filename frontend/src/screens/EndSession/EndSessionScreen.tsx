@@ -1,5 +1,5 @@
 /**
- * Demo 8 — Kết thúc phiên (rtt_hackathon.pen · "Demo 8 Kết thúc phiên").
+ * Kết thúc phiên — thiết kế: rtt_hackathon.pen · "Kết thúc phiên".
  *
  * Tổng kết phiên: thời lượng / số câu / người tham gia, và nút quay lại danh sách
  * thiết bị hoặc xuất bản ghi. Chỉ UI.
@@ -9,12 +9,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCheck, Download, List } from 'lucide-react-native';
 
 import { useResponsive, useRttT } from '@/components/hooks';
-import type { RttStackScreenProps } from '@/navigation/rttTypes';
+import type { TranslatorStackScreenProps } from '@/navigation/types';
 import { useStore } from '@/store';
 
 const TP = { accent: '#5EEAD4', text2: '#9AA0A6', black: '#000000' };
 
-export function Demo8EndSession({ navigation }: RttStackScreenProps<'EndSession'>) {
+export function EndSessionScreen({ navigation }: TranslatorStackScreenProps<'EndSession'>) {
   const { compact } = useResponsive();
   const t = useRttT();
   const insets = useSafeAreaInsets();
@@ -22,9 +22,9 @@ export function Demo8EndSession({ navigation }: RttStackScreenProps<'EndSession'
   const clearTurns = useStore((s) => s.clearTurns);
 
   const STATS = [
-    { value: '—', label: t.demo8.durationLabel },
-    { value: String(turns.length), label: t.demo8.sentencesLabel },
-    { value: '2', label: t.demo8.participantsLabel },
+    { value: '—', label: t.endSession.durationLabel },
+    { value: String(turns.length), label: t.endSession.sentencesLabel },
+    { value: '2', label: t.endSession.participantsLabel },
   ];
 
   const backToDevices = () => {
@@ -52,9 +52,9 @@ export function Demo8EndSession({ navigation }: RttStackScreenProps<'EndSession'
           </View>
 
           <View className="items-center gap-2">
-            <Text className="text-center text-[28px] font-semibold text-tp-text">{t.demo8.ended}</Text>
+            <Text className="text-center text-[28px] font-semibold text-tp-text">{t.endSession.ended}</Text>
             <Text className="text-center text-[15px] leading-[21px] text-tp-text2">
-              {t.demo8.endedSubtitle}
+              {t.endSession.endedSubtitle}
             </Text>
           </View>
 
@@ -76,11 +76,11 @@ export function Demo8EndSession({ navigation }: RttStackScreenProps<'EndSession'
               className="w-full flex-row items-center justify-center gap-2 rounded-full bg-tp-accent p-[15px]"
             >
               <List size={18} color={TP.black} />
-              <Text className="text-base font-semibold text-tp-bg">{t.demo8.backToDevices}</Text>
+              <Text className="text-base font-semibold text-tp-bg">{t.endSession.backToDevices}</Text>
             </Pressable>
             <View className="w-full flex-row items-center justify-center gap-2 rounded-full border border-tp-border bg-tp-surface p-[15px]">
               <Download size={17} color={TP.text2} />
-              <Text className="text-[15px] font-medium text-tp-text">{t.demo8.exportTxt}</Text>
+              <Text className="text-[15px] font-medium text-tp-text">{t.endSession.exportTxt}</Text>
             </View>
           </View>
         </View>

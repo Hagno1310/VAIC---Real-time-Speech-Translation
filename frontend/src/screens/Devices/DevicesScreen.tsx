@@ -1,8 +1,8 @@
 /**
- * Demo 2 — Danh sách thiết bị (rtt_hackathon.pen · "Demo 2 Danh sách thiết bị").
+ * Danh sách thiết bị (lobby) — thiết kế: rtt_hackathon.pen · "Danh sách thiết bị".
  *
  * Cùng backend LAN: hiện thiết bị của mình + các thiết bị khác đang online (từ
- * event `lobby`). Bấm "Mời" → gửi `invite`; nhận lời mời → sang Demo3; ghép được
+ * event `lobby`). Bấm "Mời" → gửi `invite`; nhận lời mời → sang màn Invite; ghép được
  * phòng → sang Meeting.
  */
 import { useEffect, useState } from 'react';
@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AlertTriangle, Languages, Laptop, Link2, Loader, UserPlus, Users, Wifi } from 'lucide-react-native';
 
 import { useResponsive, useRttT } from '@/components/hooks';
-import type { RttStackScreenProps } from '@/navigation/rttTypes';
+import type { TranslatorStackScreenProps } from '@/navigation/types';
 import { isDesktop, onDevices } from '@/services/desktopBridge';
 import type { DesktopDevice } from '@/services/desktopBridge';
 import { useStore } from '@/store';
@@ -27,7 +27,7 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
+export function DevicesScreen({ navigation }: TranslatorStackScreenProps<'Devices'>) {
   const { compact } = useResponsive();
   const t = useRttT();
   const insets = useSafeAreaInsets();
@@ -96,7 +96,7 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
           <Pill>
             <Users size={15} color={TP.accent} />
             <Text className="text-[13px] font-medium text-tp-text">
-              {t.demo2.otherDevices(devices.length)}
+              {t.devices.otherDevices(devices.length)}
             </Text>
           </Pill>
         </View>
@@ -116,7 +116,7 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
             <View className="gap-[3px]">
               <Text className="text-lg font-semibold text-tp-text">{myName}</Text>
               <Text className="text-[13px] text-tp-text2">
-                {t.demo2.yourDevice(t.common.langLabel(srcLang))}
+                {t.devices.yourDevice(t.common.langLabel(srcLang))}
               </Text>
             </View>
           </View>
@@ -152,7 +152,7 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
             />
           </View>
         </View>
-        <Text className="-mt-2 px-1 text-[11px] text-tp-muted">{t.demo2.changeLangHint}</Text>
+        <Text className="-mt-2 px-1 text-[11px] text-tp-muted">{t.devices.changeLangHint}</Text>
 
         {!!translatorError && (
           <View className="rounded-xl border px-4 py-3" style={{ borderColor: '#5a2a2e', backgroundColor: '#2a1518' }}>
@@ -211,11 +211,11 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
 
         {/* Available head */}
         <View className="flex-row items-center justify-between">
-          <Text className="text-xl font-semibold text-tp-text">{t.demo2.availableHead}</Text>
+          <Text className="text-xl font-semibold text-tp-text">{t.devices.availableHead}</Text>
           <View className="flex-row items-center gap-[7px]">
             <Loader size={14} color={TP.muted} />
             <Text className="text-[13px] text-tp-muted">
-              {status === 'connected' ? t.demo2.searching : t.demo2.notConnected}
+              {status === 'connected' ? t.devices.searching : t.devices.notConnected}
             </Text>
           </View>
         </View>
@@ -224,10 +224,10 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
         {devices.length === 0 ? (
           <View className="items-center gap-2 rounded-[14px] border border-dashed border-tp-border bg-tp-surface p-8">
             <Text className="text-center text-[15px] text-tp-text2">
-              {t.demo2.emptyTitle}
+              {t.devices.emptyTitle}
             </Text>
             <Text className="text-center text-[13px] text-tp-muted">
-              {t.demo2.emptyHint}
+              {t.devices.emptyHint}
             </Text>
           </View>
         ) : (
@@ -245,12 +245,12 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
                     <Laptop size={24} color={dev.busy ? TP.muted : TP.text2} />
                     <View className="flex-1 gap-[3px]">
                       <Text className="text-base font-semibold text-tp-text">{dev.name}</Text>
-                      <Text className="text-xs text-tp-muted">{t.demo2.deviceLang(t.common.langLabel(dev.lang))}</Text>
+                      <Text className="text-xs text-tp-muted">{t.devices.deviceLang(t.common.langLabel(dev.lang))}</Text>
                       {sameLang && !dev.busy && (
                         <View className="mt-0.5 flex-row items-center gap-1.5">
                           <AlertTriangle size={12} color={TP.red} />
                           <Text className="text-[11px]" style={{ color: '#ff8a99' }}>
-                            {t.demo2.sameLangWarn}
+                            {t.devices.sameLangWarn}
                           </Text>
                         </View>
                       )}
@@ -258,12 +258,12 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
                   </View>
                   {dev.busy ? (
                     <View className="rounded-full border border-tp-border bg-tp-surface px-5 py-2.5">
-                      <Text className="text-sm text-tp-muted">{t.demo2.busy}</Text>
+                      <Text className="text-sm text-tp-muted">{t.devices.busy}</Text>
                     </View>
                   ) : waiting ? (
                     <View className="flex-row items-center gap-2 rounded-full border border-tp-border bg-tp-surface px-5 py-2.5">
                       <Loader size={14} color={TP.text2} />
-                      <Text className="text-sm text-tp-text2">{t.demo2.waiting}</Text>
+                      <Text className="text-sm text-tp-text2">{t.devices.waiting}</Text>
                     </View>
                   ) : (
                     <Pressable
@@ -273,7 +273,7 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
                       style={{ opacity: status !== 'connected' || pendingInviteTo !== null ? 0.5 : 1 }}
                     >
                       <UserPlus size={15} color={TP.black} />
-                      <Text className="text-sm font-semibold text-tp-bg">{t.demo2.invite}</Text>
+                      <Text className="text-sm font-semibold text-tp-bg">{t.devices.invite}</Text>
                     </Pressable>
                   )}
                 </View>
@@ -301,10 +301,10 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
           >
             <View className="flex-row items-center gap-2.5">
               <AlertTriangle size={22} color={TP.red} />
-              <Text className="text-lg font-semibold text-tp-text">{t.demo2.sameLangTitle}</Text>
+              <Text className="text-lg font-semibold text-tp-text">{t.devices.sameLangTitle}</Text>
             </View>
             <Text className="text-[14px] leading-[20px] text-tp-text2">
-              {t.demo2.sameLangBody(
+              {t.devices.sameLangBody(
                 confirmDevice?.name ?? '',
                 confirmDevice ? t.common.langLabel(confirmDevice.lang) : '',
               )}
@@ -314,7 +314,7 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
                 onPress={() => setConfirmDevice(null)}
                 className="flex-1 items-center justify-center rounded-full border border-tp-border bg-tp-surface p-[13px]"
               >
-                <Text className="text-[15px] font-medium text-tp-text">{t.demo2.cancel}</Text>
+                <Text className="text-[15px] font-medium text-tp-text">{t.devices.cancel}</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -323,7 +323,7 @@ export function Demo2Devices({ navigation }: RttStackScreenProps<'Devices'>) {
                 }}
                 className="flex-1 items-center justify-center rounded-full bg-tp-accent p-[13px]"
               >
-                <Text className="text-[15px] font-semibold text-tp-bg">{t.demo2.inviteAnyway}</Text>
+                <Text className="text-[15px] font-semibold text-tp-bg">{t.devices.inviteAnyway}</Text>
               </Pressable>
             </View>
           </Pressable>

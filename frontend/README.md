@@ -9,7 +9,7 @@ Base mobile application built with **React Native (Expo) + TypeScript (strict) +
 | Runtime         | Expo SDK 52 (React Native 0.76, New Arch)     |
 | Language        | TypeScript (strict mode, no `any`)            |
 | Styling         | NativeWind v4 (Tailwind CSS for RN)           |
-| Navigation      | React Navigation (native-stack + bottom-tabs) |
+| Navigation      | React Navigation (native-stack) |
 | State           | Zustand (slices pattern)                      |
 | HTTP            | Axios with interceptors                       |
 | Storage         | AsyncStorage (token persistence)              |

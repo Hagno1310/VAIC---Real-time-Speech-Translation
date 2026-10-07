@@ -121,7 +121,7 @@ npm run lint       # eslint src/**/*.{ts,tsx}
    - Windows: `ipconfig` → tìm dòng `IPv4 Address` (ví dụ `192.168.1.10`)
    - macOS/Linux: `ifconfig` hoặc `ip addr`
 3. **Mở tường lửa** cho cổng TCP 8000 trên máy backend.
-4. Trên **cả hai** thiết bị, mở app và vào **Demo1 → "Cài đặt backend"**, đặt WS URL:
+4. Trên **cả hai** thiết bị, mở app và vào màn **Chọn ngôn ngữ → "Cài đặt backend"**, đặt WS URL:
    ```
    ws://<lan-ip>:8000/ws
    ```
@@ -216,7 +216,7 @@ OpenNezt-PTIT/
 │   ├── static/       # console test trình duyệt (phục vụ ở /app)
 │   └── .env.example  # mẫu cấu hình
 ├── frontend/         # App Expo / React Native
-│   └── src/screens/rtt/   # luồng dịch trực tiếp (Demo1..Demo8)
+│   └── src/screens/       # Language · Devices · Invite · Meeting · EndSession
 └── CLAUDE.md         # tài liệu kiến trúc chi tiết cho lập trình viên
 ```
 

@@ -11,8 +11,9 @@ that talk over a **single WebSocket** (`ws://<host>:8000/ws`) using a
 - `backend/` — FastAPI + WebSocket STT → NMT → TTS pipeline (Python). Cloud mode
   runs on **Groq** (Whisper STT + Qwen chat NMT).
 - `frontend/` — **Expo / React Native (mobile)** app. The **RTT** flow
-  (`src/screens/rtt/Demo1-4` + `Demo8` — push-to-talk and the history panel
-  live in the Meeting screen, not their own files) is the live translator UI.
+  (`src/screens/{Language,Devices,Invite,Meeting,EndSession}`, wired in
+  `navigation/TranslatorStack.tsx` — push-to-talk and the history panel live in
+  the Meeting screen) is the live translator UI.
 
 **Primary product = LAN 1:1 pairing ("chat nội bộ").** Two devices point at the
 *same* backend on the LAN, discover each other in a lobby, pair into a 1:1 room,
@@ -24,7 +25,7 @@ still works for the `/app` browser console and any client that never sends
 
 > To run two real machines: start the backend with `--host 0.0.0.0`, find the
 > host LAN IPv4 (`ipconfig`), open the firewall for TCP 8000, and set the WS URL
-> on both clients to `ws://<lan-ip>:8000/ws` (Demo1 → "Cài đặt backend"). Browser
+> on both clients to `ws://<lan-ip>:8000/ws` (Language screen → "Cài đặt backend"). Browser
 > mic capture only works on `localhost`/https, so use Expo Go on phones or run
 > Expo Web on each machine's own localhost (only the WS URL needs the LAN IP).
 
@@ -69,8 +70,8 @@ it before touching `frontend/`. This root file does not repeat its rules.
 Pairing-specific frontend facts (protocol-spanning, not in `frontend/claude.md`):
 `store/slices/translatorSlice.ts` owns one `TranslatorSocket` plus the lobby/room
 state (`devices`, `room`, `incomingInvite`, `myClientId`) and drives the flow —
-Demo1 `enterLobby`→`hello`, Demo2 lobby+`invite`, Demo3 `accept`, Demo4 Meeting
-(push-to-talk via `useMeetingMic` + the in-meeting history panel), Demo8 end session.
+Language `enterLobby`→`hello`, Devices lobby+`invite`, Invite `accept`, Meeting
+(push-to-talk via `useMeetingMic` + the in-meeting history panel), EndSession.
 Because translation routes to the peer, the **speaker records its own words from
 `stt.final`** (`turn.mine=true`); the **listener records the peer's from
 `nmt.result`** (`mine=false`). `services/audioPlayback.ts` is platform-split: web

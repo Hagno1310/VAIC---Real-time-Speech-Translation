@@ -1,5 +1,5 @@
 /**
- * Màn NGHE/NÓI hợp nhất (thay Demo4 Meeting + Demo6 YourTurn).
+ * Màn cuộc họp: NGHE/NÓI hợp nhất trên một màn.
  *
  * Immersive: hero chữ lớn GIỮA màn hiện đoạn voice + bản dịch. Push-to-talk bằng
  * nút "Nhấn giữ để nói" hoặc giữ phím Space (web). Nút Lịch sử / phím H (web) mở
@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AlertTriangle, History, Lock, Mic, PhoneOff, Volume2, X } from 'lucide-react-native';
 
 import { useMeetingMic, useResponsive, useRttT } from '@/components/hooks';
-import type { RttStackScreenProps } from '@/navigation/rttTypes';
+import type { TranslatorStackScreenProps } from '@/navigation/types';
 import type { Speaker, TranslatorTurn } from '@/types/translator';
 import { useStore } from '@/store';
 
@@ -150,7 +150,7 @@ function HistoryBubble({
   );
 }
 
-export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
+export function MeetingScreen({ navigation }: TranslatorStackScreenProps<'Meeting'>) {
   const { compact } = useResponsive();
   const t = useRttT();
   const insets = useSafeAreaInsets();
@@ -319,10 +319,10 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
           </View>
           <Text className="text-[15px] font-medium text-tp-text" numberOfLines={1}>
             {speaking
-              ? t.demo4.sendingTo(peerName)
+              ? t.meeting.sendingTo(peerName)
               : justSpoke
-                ? t.demo4.youJustSpoke
-                : t.demo4.listeningTo(peerName)}
+                ? t.meeting.youJustSpoke
+                : t.meeting.listeningTo(peerName)}
           </Text>
         </View>
         <View className="flex-row items-center gap-3">
@@ -336,7 +336,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
           >
             <History size={15} color={TP.text2} />
             <Text className="text-[13px] text-tp-text2">
-              {compact ? '' : t.demo4.history}
+              {compact ? '' : t.meeting.history}
               {turns.length > 0 ? `${compact ? '' : ' · '}${turns.length}` : ''}
             </Text>
           </Pressable>
@@ -347,7 +347,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
           >
             <PhoneOff size={15} color={TP.red} />
             <Text className="text-sm font-medium" style={{ color: TP.red }}>
-              {t.demo4.end}
+              {t.meeting.end}
             </Text>
           </Pressable>
         </View>
@@ -361,7 +361,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
         >
           <AlertTriangle size={18} color={TP.red} />
           <Text className="flex-1 text-[13px]" style={{ color: '#ff8a99' }}>
-            {t.demo4.sameLangBanner(peerName, srcLang.toUpperCase())}
+            {t.meeting.sameLangBanner(peerName, srcLang.toUpperCase())}
           </Text>
         </View>
       )}
@@ -373,12 +373,12 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
           style={{ color: speaking || justSpoke || showMineLoading ? TP.accent : TP.text2 }}
         >
           {speaking
-            ? t.demo4.statusSpeaking
+            ? t.meeting.statusSpeaking
             : showMineLoading
-              ? t.demo4.statusProcessing
+              ? t.meeting.statusProcessing
               : justSpoke
-                ? t.demo4.statusSpoke
-                : t.demo4.statusListening}
+                ? t.meeting.statusSpoke
+                : t.meeting.statusListening}
         </Text>
         <View
           style={{ maxHeight: compact ? 220 : 380, overflow: 'hidden', maxWidth: 1000 }}
@@ -388,7 +388,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
             <View className="flex-row items-center gap-3">
               <ActivityIndicator color={TP.accent} />
               <Text className="text-center text-lg text-tp-text2" style={{ maxWidth: 720 }}>
-                {t.demo4.processing}
+                {t.meeting.processing}
               </Text>
             </View>
           ) : heroBig ? (
@@ -404,21 +404,21 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
             </Text>
           ) : speaking ? (
             <Text className="text-center text-lg text-tp-muted" style={{ maxWidth: 720 }}>
-              {t.demo4.listeningToYou}
+              {t.meeting.listeningToYou}
             </Text>
           ) : (
             <Text className="text-center text-lg text-tp-muted" style={{ maxWidth: 720 }}>
-              {status === 'connected' ? t.demo4.ready(peerName) : t.demo4.roomLost}
+              {status === 'connected' ? t.meeting.ready(peerName) : t.meeting.roomLost}
             </Text>
           )}
         </View>
         {showMineLoading ? null : speaking ? (
           <Text className="mt-5 text-center text-base text-tp-text2" numberOfLines={2} style={{ maxWidth: 800 }}>
-            {t.demo4.sendingTranslation(peerName)}
+            {t.meeting.sendingTranslation(peerName)}
           </Text>
         ) : justSpoke ? (
           <Text className="mt-5 text-center text-base text-tp-text2" numberOfLines={2} style={{ maxWidth: 800 }}>
-            {t.demo4.sentWaiting(peerName)}
+            {t.meeting.sentWaiting(peerName)}
           </Text>
         ) : (
           !!heroSrc && (
@@ -438,7 +438,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
               <View key={i} className="w-[3px] rounded-sm bg-tp-accent" style={{ height: h }} />
             ))}
           </View>
-          <Text className="text-[13px] text-tp-text2">{t.demo4.readingAloud}</Text>
+          <Text className="text-[13px] text-tp-text2">{t.meeting.readingAloud}</Text>
         </View>
       )}
 
@@ -461,7 +461,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
             className="text-lg font-bold"
             style={{ color: speaking ? '#ffffff' : TP.black }}
           >
-            {speaking ? t.demo4.talkActive : t.demo4.talkIdle}
+            {speaking ? t.meeting.talkActive : t.meeting.talkIdle}
           </Text>
         </Pressable>
         {mic.error ? (
@@ -470,10 +470,10 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
           </Text>
         ) : Platform.OS === 'web' ? (
           <Text className="text-[13px] text-tp-muted">
-            {t.demo4.hintWeb}
+            {t.meeting.hintWeb}
           </Text>
         ) : (
-          <Text className="text-[13px] text-tp-muted">{t.demo4.hintNative}</Text>
+          <Text className="text-[13px] text-tp-muted">{t.meeting.hintNative}</Text>
         )}
       </View>
 
@@ -485,7 +485,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
             className="absolute inset-0"
             style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
             onPress={() => setHistoryOpen(false)}
-            accessibilityLabel={t.demo4.close}
+            accessibilityLabel={t.meeting.close}
           />
           <View
             className={`absolute bg-tp-bg ${
@@ -502,7 +502,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
               </View>
               <Pressable
                 onPress={() => setHistoryOpen(false)}
-                accessibilityLabel={t.demo4.close}
+                accessibilityLabel={t.meeting.close}
                 hitSlop={8}
                 className="rounded-full border border-tp-border bg-tp-surface p-2"
               >
@@ -521,7 +521,7 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
             >
               {turns.length === 0 ? (
                 <Text className="py-10 text-center text-base text-tp-muted">
-                  {t.demo4.emptyHistory}
+                  {t.meeting.emptyHistory}
                 </Text>
               ) : (
                 turns.map((turn) => (

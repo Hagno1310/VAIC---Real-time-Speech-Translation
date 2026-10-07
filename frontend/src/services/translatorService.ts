@@ -14,7 +14,27 @@ export interface TranslatorSocketHandlers {
   onOpen: () => void;
   onEvent: (event: ServerEvent) => void;
   onClose: () => void;
-  onError: () => void;
+  /** `reason` chỉ có khi KHÔNG tạo nổi kết nối (URL sai / bị trình duyệt chặn). */
+  onError: (reason?: string) => void;
+}
+
+/**
+ * Chuẩn hoá URL người dùng gõ (hay gõ thiếu trên điện thoại):
+ *   `192.168.1.5:8000` → `ws://192.168.1.5:8000/ws`, `https://x` → `wss://x/ws`.
+ * Trang mở qua https (vd devtunnel) bị trình duyệt cấm mở `ws://` → nâng lên `wss://`.
+ */
+export function normalizeWsUrl(input: string, pageIsHttps: boolean): string {
+  let url = input.trim();
+  url = url.replace(/^http:\/\//i, 'ws://').replace(/^https:\/\//i, 'wss://');
+  if (!/^wss?:\/\//i.test(url)) url = `${pageIsHttps ? 'wss' : 'ws'}://${url}`;
+  if (pageIsHttps) url = url.replace(/^ws:\/\//i, 'wss://');
+  if (!/^wss?:\/\/[^/]+\/./i.test(url)) url = `${url.replace(/\/$/, '')}/ws`;
+  return url;
+}
+
+function pageIsHttps(): boolean {
+  const loc = (globalThis as { location?: { protocol?: string } }).location;
+  return loc?.protocol === 'https:';
 }
 
 const KNOWN_EVENTS: ReadonlySet<string> = new Set<ServerEvent['type']>([
@@ -58,7 +78,16 @@ export class TranslatorSocket {
   /** Mở kết nối tới `url` và nối các callback. Đóng kết nối cũ trước. */
   connect(url: string, handlers: TranslatorSocketHandlers): void {
     this.close();
-    const ws = new WebSocket(url);
+    let ws: WebSocket;
+    try {
+      // Ném lỗi ĐỒNG BỘ khi URL sai hoặc bị chặn — phải bắt, nếu không lỗi sẽ
+      // bay ra tận nút bấm (vd "Tiếp tục" đứng im không chuyển màn).
+      ws = new WebSocket(normalizeWsUrl(url, pageIsHttps()));
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      setTimeout(() => handlers.onError(reason), 0);
+      return;
+    }
     this.ws = ws;
 
     ws.onopen = () => handlers.onOpen();

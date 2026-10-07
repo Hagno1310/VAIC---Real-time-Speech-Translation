@@ -11,44 +11,23 @@
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { CompositeScreenProps } from '@react-navigation/native';
 
-/** Screens available in the unauthenticated (Auth) stack. */
-export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
+/** Translator flow: language → lobby → invite → meeting → end of session. */
+export type TranslatorStackParamList = {
+  Language: undefined; // Chọn ngôn ngữ + tên thiết bị, vào lobby
+  Devices: undefined; // Danh sách thiết bị cùng mạng (lobby)
+  Invite: undefined; // Lời mời kết nối
+  Meeting: undefined; // Trong cuộc họp (nói/nghe + lịch sử)
+  EndSession: undefined; // Kết thúc phiên
 };
 
-/** Tabs available in the authenticated (Main) flow. */
-export type MainTabParamList = {
-  Home: undefined;
-  Profile: { userId?: string } | undefined;
-};
-
-/** Top-level navigator switching between the two flows. */
+/** Top-level navigator. */
 export type RootStackParamList = {
-  Auth: NavigatorScreenParams<AuthStackParamList>;
-  Main: NavigatorScreenParams<MainTabParamList>;
+  Main: NavigatorScreenParams<TranslatorStackParamList>;
 };
 
-// --- Per-screen prop helpers ------------------------------------------------
-
-export type AuthStackScreenProps<T extends keyof AuthStackParamList> =
-  NativeStackScreenProps<AuthStackParamList, T>;
-
-export type RootStackScreenProps<T extends keyof RootStackParamList> =
-  NativeStackScreenProps<RootStackParamList, T>;
-
-/**
- * Tab screens can also reach the root stack (e.g. to reset back to Auth), so we
- * compose the tab props with the root stack props.
- */
-export type MainTabScreenProps<T extends keyof MainTabParamList> =
-  CompositeScreenProps<
-    BottomTabScreenProps<MainTabParamList, T>,
-    RootStackScreenProps<keyof RootStackParamList>
-  >;
+export type TranslatorStackScreenProps<T extends keyof TranslatorStackParamList> =
+  NativeStackScreenProps<TranslatorStackParamList, T>;
 
 // --- Global type augmentation ----------------------------------------------
 declare global {

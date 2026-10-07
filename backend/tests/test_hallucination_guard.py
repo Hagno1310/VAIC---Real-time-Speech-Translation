@@ -24,3 +24,17 @@ def test_no_speech_segments_are_filtered():
     }
     assert extract_transcript(resp) == "Doanh thu tăng."
     assert extract_transcript({"text": "x", "segments": [{"text": "x", "no_speech_prob": 0.8}]}) == ""
+
+
+def test_noise_never_reaches_whisper():
+    import io, wave
+
+    import numpy as np
+    from app.core.audio_utils import speech_only
+
+    noise = np.random.default_rng(1).normal(0, 0.03, 48000)
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1), w.setsampwidth(2), w.setframerate(16000)
+        w.writeframes((noise * 32767).astype("<i2").tobytes())
+    assert speech_only(buf.getvalue()) is None  # loud, but no voice

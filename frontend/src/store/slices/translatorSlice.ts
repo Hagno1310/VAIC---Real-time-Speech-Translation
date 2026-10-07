@@ -65,7 +65,7 @@ export interface TranslatorSlice {
 
   /** Lịch sử: MỖI lượt nói (một lần push-to-talk) là MỘT entry đã gộp. */
   turns: TranslatorTurn[];
-  /** Các segment đã cắt trong LƯỢT hiện tại (dùng cho card bên trái Demo6). */
+  /** Các segment đã cắt trong LƯỢT hiện tại (gộp thành một entry lịch sử khi kết thúc lượt). */
   sessionSegments: TranslatorTurn[];
   /** Bong bóng "đang nói" hiện tại (từ stt.partial), hoặc null. */
   live: LiveLine | null;
@@ -210,11 +210,19 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
         // Rớt/không mở được trong khi vẫn muốn ở lobby → thử lại.
         if (get()._lobbyName !== null) scheduleReconnect();
       },
-      onError: () => {
+      onError: (reason) => {
+        // URL sai / bị chặn: thử lại vô ích → báo ngay cách sửa.
+        if (reason) {
+          set({
+            translatorStatus: 'error',
+            translatorError: `${errs().wsError} ${errs().wsUrlHint} (${reason})`,
+          });
+          return;
+        }
         // Chưa vào lobby được (backend đang khởi động) → im lặng thử lại.
         // onClose thường theo sau onError nên việc lên lịch để onClose lo.
         if (get()._lobbyName === null) {
-          set({ translatorStatus: 'error', translatorError: 'Lỗi kết nối WebSocket tới backend.' });
+          set({ translatorStatus: 'error', translatorError: errs().wsError });
         }
       },
     });
@@ -490,8 +498,11 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
         },
         onEvent: handleEvent,
         onClose: () => set({ translatorStatus: 'disconnected', _direction: null }),
-        onError: () =>
-          set({ translatorStatus: 'error', translatorError: errs().wsError }),
+        onError: (reason) =>
+          set({
+            translatorStatus: 'error',
+            translatorError: reason ? `${errs().wsError} ${errs().wsUrlHint} (${reason})` : errs().wsError,
+          }),
       });
     },
 
@@ -560,8 +571,11 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
           // Rớt/không mở được trong khi vẫn muốn ở lobby → thử lại.
           if (get()._lobbyName !== null) scheduleReconnect();
         },
-        onError: () =>
-          set({ translatorStatus: 'error', translatorError: errs().wsError }),
+        onError: (reason) =>
+          set({
+            translatorStatus: 'error',
+            translatorError: reason ? `${errs().wsError} ${errs().wsUrlHint} (${reason})` : errs().wsError,
+          }),
       });
     },
 

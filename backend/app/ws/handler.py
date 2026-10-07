@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 from fastapi import WebSocket
 
+from ..core import warmup
 from ..core.glossary import apply_glossary
 from ..core.metrics import Stopwatch, TurnMetrics
 from ..core.session import SessionState
@@ -152,7 +153,7 @@ async def _on_hello(
         # (e.g. it selected the wrong language). Update the registry so the new
         # language propagates to every other device via the lobby rebroadcast.
         manager.update_identity(session.client_id, name, lang)
-    await send(ws, "welcome", {"clientId": session.client_id})
+    await send(ws, "welcome", {"clientId": session.client_id, "serverReady": warmup.is_ready()})
     await manager.broadcast_lobby()
 
 

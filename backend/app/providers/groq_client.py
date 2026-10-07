@@ -11,7 +11,11 @@ Docs: https://console.groq.com/docs/speech-to-text
 """
 from __future__ import annotations
 
+import logging
+
 import httpx
+
+log = logging.getLogger("providers.groq_client")
 
 _TIMEOUT = 45.0
 # Whisper segments with no_speech_prob at/above this are treated as noise.
@@ -125,13 +129,42 @@ async def _chat(api_key: str, base_url: str, model: str, messages: list[dict]) -
         raise RuntimeError(f"Groq chat non-JSON body: {resp.text[:200]}") from e
 
 
+def spoken_in(response_json: dict, lang: str) -> bool | None:
+    """Did Whisper hear `lang`? None when it detected a language we don't pair
+    (unknown verdict — e.g. a short clip misdetected as Chinese)."""
+    detected = (response_json.get("language") or "").strip().lower()
+    names = {code: name.lower() for code, name in _LANG_NAMES.items()}
+    if detected in (lang.lower(), names.get(lang.lower())):
+        return True
+    if detected in names or detected in names.values():
+        return False
+    return None
+
+
 async def transcribe_audio(
     api_key: str, base_url: str, model: str, audio: bytes, mime: str, source_lang: str
 ) -> str:
-    """Transcribe raw audio bytes to text via Groq Whisper."""
-    return extract_transcript(
-        await _transcribe(api_key, base_url, model, audio, mime, source_lang)
-    )
+    """Transcribe raw audio bytes to text via Groq Whisper — only speech that is
+    actually IN `source_lang`.
+
+    Whisper runs with language auto-detect first. Forcing the language made it
+    "translate" any other-language audio into `source_lang`: in a shared room the
+    speaker's mic picks up the PEER device reading the English translation aloud,
+    which came back as fresh Vietnamese text, got translated and read again — an
+    endless echo loop. Audio detected as the other paired language is dropped
+    (""), so the speaker's own device only ever records the speaker's language.
+    """
+    if not source_lang or source_lang.lower() == "auto":
+        return extract_transcript(await _transcribe(api_key, base_url, model, audio, mime, ""))
+    raw = await _transcribe(api_key, base_url, model, audio, mime, "auto")
+    match = spoken_in(raw, source_lang)
+    if match is False:
+        log.info("Dropped STT window spoken in %r (expected %s): %r",
+                 raw.get("language"), source_lang, (raw.get("text") or "")[:80])
+        return ""
+    if match is None:  # odd detection: fall back to the forced-language transcript
+        raw = await _transcribe(api_key, base_url, model, audio, mime, source_lang)
+    return extract_transcript(raw)
 
 
 async def translate_text(

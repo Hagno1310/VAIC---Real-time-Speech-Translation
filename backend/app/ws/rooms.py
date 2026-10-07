@@ -103,6 +103,11 @@ class ConnectionManager:
             for c in self._clients.values()
         ]
 
+    async def broadcast(self, event: str, data: dict) -> None:
+        """Send one event to every registered client (lobby or room)."""
+        for c in list(self._clients.values()):
+            await self._safe_send(c.ws, event, data)
+
     async def broadcast_lobby(self) -> None:
         """Push the current device list to every client NOT in a room.
 
