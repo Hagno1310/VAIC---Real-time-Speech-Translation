@@ -22,6 +22,12 @@ const queue: Clip[] = [];
 let busy = false;
 let seq = 0;
 
+// Mỗi clip TTS kết thúc gần như không có khoảng lặng → các câu phát dính liền,
+// nghe như đọc một mạch không lấy hơi. Chèn một nhịp nghỉ cuối câu giữa hai clip
+// liền nhau (chỉ phần còn thiếu: clip tới muộn thì khoảng trống đã đủ sẵn).
+const SENTENCE_GAP_MS = 380;
+let lastEndedAt = 0;
+
 /**
  * Xếp một clip base64 vào hàng đợi; tự phát nếu đang rảnh.
  * `onStart` (tuỳ chọn) được gọi TỐI ĐA MỘT LẦN khi clip thật sự bắt đầu phát,
@@ -40,6 +46,8 @@ async function playNext(): Promise<void> {
     return;
   }
   busy = true;
+  const wait = lastEndedAt + SENTENCE_GAP_MS - Date.now();
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
   const { base64, onStart } = clip;
 
   // Chuyển sang clip kế đúng MỘT lần (dù nhận được nhiều sự kiện kết thúc).
@@ -47,6 +55,7 @@ async function playNext(): Promise<void> {
   const advance = (player?: { remove: () => void }) => {
     if (done) return;
     done = true;
+    lastEndedAt = Date.now();
     if (player) {
       try {
         player.remove();

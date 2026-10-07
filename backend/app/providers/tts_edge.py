@@ -16,7 +16,7 @@ from .base import TTSProvider
 
 log = logging.getLogger("providers.tts_edge")
 
-_ATTEMPTS = 4
+_ATTEMPTS = 2  # each failed try costs ~3s; more retries just stall the turn
 
 
 class EdgeTTSProvider(TTSProvider):
