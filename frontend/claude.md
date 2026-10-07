@@ -107,8 +107,8 @@ screens ─▶ components ─▶ (hooks, utils)
 - `types.ts` — `*ParamList` + per-screen prop helpers. **Add a route here
   first**, then wire it up. Update the global `ReactNavigation.RootParamList`
   augmentation.
-- `AuthStack.tsx` (unauthenticated) · `MainTab.tsx` (authenticated) ·
-  `AppNavigator.tsx` (root switch based on auth state + `hydrated` splash).
+- `AppNavigator.tsx` (root) → `RttStack.tsx` (the translator flow, routes in
+  `rttTypes.ts`). The Auth/Main template stacks were removed (see git history).
 
 ### `src/components/` — reusable UI & logic
 - `ui/` — atomic, presentational, **stateless-ish** widgets (`Button`, `Input`,
@@ -140,7 +140,7 @@ User action ─▶ Screen ─▶ Service (Axios)
 ```
 
 - Server data that many screens share → **store**.
-- Data local to one screen → **`useState` in that screen** (see `HomeScreen`).
+- Data local to one screen → **`useState` in that screen** (see `Demo4Meeting`).
 - Never call a service from `ui/` or `utils/`.
 
 ---
@@ -183,7 +183,7 @@ User action ─▶ Screen ─▶ Service (Axios)
 **New screen**
 1. Add the route to the correct `*ParamList` in `navigation/types.ts`.
 2. Create `src/screens/<Feature>/<Feature>Screen.tsx` + `index.ts`.
-3. Register it in `AuthStack.tsx` or `MainTab.tsx`.
+3. Register it in `RttStack.tsx` (route in `rttTypes.ts`).
 4. Type props with the matching `*ScreenProps<'Route'>` helper.
 
 **New reusable component**

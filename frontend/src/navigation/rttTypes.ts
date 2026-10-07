@@ -9,8 +9,6 @@ export type RttStackParamList = {
   Devices: undefined; // Demo 2 — Danh sách thiết bị
   Invite: undefined; // Demo 3 — Lời mời kết nối
   Meeting: undefined; // Demo 4 — Trong cuộc họp
-  ListenerView: undefined; // Demo 5 — Người nghe thấy bản dịch (mock tham chiếu)
-  History: undefined; // Demo 7 — Lịch sử dịch
   EndSession: undefined; // Demo 8 — Kết thúc phiên
 };
 

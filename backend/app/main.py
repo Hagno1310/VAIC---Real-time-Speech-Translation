@@ -21,6 +21,7 @@ from .core.glossary import list_glossaries
 from .core.session import SessionState
 from .core.warmup import run_warmup
 from .providers.factory import VALID_MODES
+from .setup_api import router as setup_router
 from .ws.handler import dispatch
 from .ws.rooms import manager
 
@@ -63,6 +64,9 @@ app.add_middleware(
 )
 
 
+app.include_router(setup_router)  # /setup page + /api/setup (localhost only)
+
+
 @app.get("/")
 async def root() -> dict:
     """Health check + quick capabilities summary."""
@@ -73,6 +77,7 @@ async def root() -> dict:
         "defaultMode": settings.default_mode,
         "glossaries": list_glossaries(),
         "ws": "/ws",
+        "setup": "/setup",
     }
 
 

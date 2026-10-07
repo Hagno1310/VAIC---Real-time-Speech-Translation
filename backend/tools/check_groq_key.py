@@ -44,8 +44,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Kiểm tra Groq API key.")
     parser.add_argument("key", nargs="?", default=None,
                         help="API key cần kiểm tra (mặc định: đọc từ .env).")
-    parser.add_argument("--model", default="llama-3.3-70b-versatile",
-                        help="Model để thử (mặc định: llama-3.3-70b-versatile).")
+    parser.add_argument("--model", default="qwen/qwen3.8-27b",
+                        help="Model để thử (mặc định: qwen/qwen3.8-27b).")
     args = parser.parse_args()
 
     key = args.key or load_key_from_env()

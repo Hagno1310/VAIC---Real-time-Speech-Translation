@@ -2,10 +2,7 @@
  * audioCapture — tiện ích thu âm & đóng gói WAV 16kHz mono cho STT.
  *
  * RN không có Web Audio API để resample, nên cấu hình expo-audio ghi trực tiếp
- * LINEARPCM 16kHz (iOS xuất WAV thật). Kèm helper nối các đoạn PCM thành một WAV
- * lớn dần (dùng cho `audio.partial` — gửi cửa sổ audio tích luỹ để dịch tự sửa).
- *
- * Vòng lặp thu + timer partial nằm ở tầng mic controller (dùng các hàm này).
+ * LINEARPCM 16kHz (iOS xuất WAV thật). Vòng lặp thu nằm ở tầng mic controller.
  */
 import { fromByteArray, toByteArray } from 'base64-js';
 import {

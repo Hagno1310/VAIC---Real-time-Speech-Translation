@@ -118,7 +118,10 @@
       <span class="brand-mark">VI<span class="swap">⇄</span>EN</span>
       <span class="brand-sub">Phiên dịch trực tiếp cuộc họp</span>
     </div>
-    <span id="status" class="status">chưa kết nối</span>
+    <span style="display:flex;gap:10px;align-items:center">
+      <a href="/setup" class="status" style="text-decoration:none">⚙ Cấu hình</a>
+      <span id="status" class="status">chưa kết nối</span>
+    </span>
   </header>
 
   <section class="controls">
@@ -237,11 +240,6 @@ function handleEvent(msg) {
     case "stt.final":                      // câu gốc chốt (đi kèm bản final)
       curTurn = newTurn(data.speaker, data.lang);
       curTurn.querySelector(".src").textContent = data.text;
-      break;
-    case "nmt.partial":                    // BẢN DỊCH cập nhật LIÊN TỤC khi đang nói
-      showLive();
-      if (data.srcText) $("liveSrc").textContent = data.srcText;
-      $("liveDst").textContent = data.dstText || "";
       break;
     case "nmt.result":                     // bản dịch chốt -> vào hội thoại
       hideLive();

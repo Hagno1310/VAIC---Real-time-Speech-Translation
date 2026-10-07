@@ -2,7 +2,8 @@
 from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.utils.hooks import collect_all
 
-datas = []
+# /app + /setup pages and the .env template the exe copies on first run.
+datas = [('static', 'static'), ('.env.example', '.')]
 binaries = []
 hiddenimports = ['appdirs']
 hiddenimports += collect_submodules('uvicorn')

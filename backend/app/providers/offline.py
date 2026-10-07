@@ -83,7 +83,6 @@ class OfflineNMTProvider(NMTProvider):
         self._dir = settings.offline_nmt_model_dir
         self._threads = settings.offline_nmt_intra_threads
         self._beam_final = settings.offline_nmt_beam_final
-        self._beam_partial = settings.offline_nmt_beam_partial
         self._device = settings.offline_nmt_device
         self._compute_type = settings.offline_nmt_compute_type
         log.info(
@@ -129,26 +128,6 @@ class OfflineNMTProvider(NMTProvider):
             self._compute_type,
         )
 
-    async def translate_partial(
-        self, text: str, source_lang: str, target_lang: str
-    ) -> str:
-        """Streaming translation: single pass, greedy (fast)."""
-        import asyncio
-
-        from .ct2_nmt import translate_one
-
-        model_dir = self._require_dir()
-        if not text or not text.strip():
-            return ""
-        return await asyncio.to_thread(
-            translate_one,
-            model_dir,
-            self._threads,
-            text,
-            source_lang,
-            target_lang,
-            self._beam_partial,
-        )
 
 
 class OfflineTTSProvider(TTSProvider):

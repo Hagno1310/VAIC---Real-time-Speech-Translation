@@ -99,27 +99,8 @@ export interface RttDict {
     talkIdle: string;
     hintWeb: string;
     hintNative: string;
-    closeWeb: string;
     close: string;
     emptyHistory: string;
-  };
-  demo5: {
-    offline: string;
-    direction: string;
-    listening: string;
-    bigText: string;
-    original: string;
-    originalText: string;
-    readingAloud: string;
-  };
-  demo7: {
-    currentSession: string;
-    exportTranscript: string;
-    info: (n: number, src: string, dst: string) => string;
-    empty: string;
-    detailTitle: string;
-    translationOf: (langCode: string) => string;
-    originalOf: (langCode: string) => string;
   };
   demo8: {
     durationLabel: string;
@@ -129,10 +110,6 @@ export interface RttDict {
     endedSubtitle: string;
     backToDevices: string;
     exportTxt: string;
-  };
-  placeholder: {
-    subtitle: string;
-    continue: string;
   };
   /** Thông báo lỗi/kết nối bắn ra từ store (translatorSlice). */
   errors: {
@@ -221,29 +198,10 @@ export const rttText: Record<UiLang, RttDict> = {
       readingAloud: 'Đang đọc to bản dịch…',
       talkActive: 'Đang nói… (thả để gửi)',
       talkIdle: 'Nhấn giữ để nói',
-      hintWeb: 'Phím tắt: Space giữ để nói · Alt bấm để bật/tắt lịch sử',
+      hintWeb: 'Phím tắt: Space giữ để nói · H mở lịch sử · Esc đóng',
       hintNative: 'Giữ nút để nói, thả ra để gửi bản dịch.',
-      closeWeb: 'Bấm Alt để đóng',
       close: 'Đóng',
       emptyHistory: 'Chưa có câu nào trong phiên.',
-    },
-    demo5: {
-      offline: 'OFFLINE',
-      direction: 'EN sang VI',
-      listening: 'ĐANG NGHE',
-      bigText: 'Chúng tôi đề xuất 2,5 triệu đô cho 18 tháng đầu.',
-      original: 'gốc',
-      originalText: "We're proposing 2.5 million dollars for the first 18 months.",
-      readingAloud: 'Đang đọc to bản dịch...',
-    },
-    demo7: {
-      currentSession: 'Phiên họp hiện tại',
-      exportTranscript: 'Xuất bản ghi',
-      info: (n, src, dst) => `${n} lượt đã dịch · ${src} → ${dst} · chạm để xem chi tiết`,
-      empty: 'Chưa có câu nào. Vào phòng họp và nhấn “Nhấn để nói”.',
-      detailTitle: 'Chi tiết bản dịch',
-      translationOf: (langCode) => `BẢN DỊCH (${langCode})`,
-      originalOf: (langCode) => `BẢN GỐC (${langCode})`,
     },
     demo8: {
       durationLabel: 'Thời lượng',
@@ -253,10 +211,6 @@ export const rttText: Record<UiLang, RttDict> = {
       endedSubtitle: 'Với David’s iPad. Đã lưu bản ghi trên thiết bị của bạn.',
       backToDevices: 'Quay lại danh sách thiết bị',
       exportTxt: 'Xuất bản ghi (.txt)',
-    },
-    placeholder: {
-      subtitle: 'Màn hình này sẽ được cắt tiếp theo thiết kế.',
-      continue: 'Tiếp tục →',
     },
     errors: {
       deviceBusy: 'Thiết bị đang bận.',
@@ -342,29 +296,10 @@ export const rttText: Record<UiLang, RttDict> = {
       readingAloud: 'Reading the translation aloud…',
       talkActive: 'Speaking… (release to send)',
       talkIdle: 'Hold to speak',
-      hintWeb: 'Shortcuts: hold Space to speak · press Alt to toggle history',
+      hintWeb: 'Shortcuts: hold Space to speak · H opens history · Esc closes',
       hintNative: 'Hold the button to speak, release to send the translation.',
-      closeWeb: 'Press Alt to close',
       close: 'Close',
       emptyHistory: 'No sentences in this session yet.',
-    },
-    demo5: {
-      offline: 'OFFLINE',
-      direction: 'EN to VI',
-      listening: 'LISTENING',
-      bigText: 'We propose 2.5 million dollars for the first 18 months.',
-      original: 'original',
-      originalText: "We're proposing 2.5 million dollars for the first 18 months.",
-      readingAloud: 'Reading the translation aloud...',
-    },
-    demo7: {
-      currentSession: 'Current meeting',
-      exportTranscript: 'Export transcript',
-      info: (n, src, dst) => `${n} translated turns · ${src} → ${dst} · tap for details`,
-      empty: 'No sentences yet. Join a meeting room and press “Hold to speak”.',
-      detailTitle: 'Translation detail',
-      translationOf: (langCode) => `TRANSLATION (${langCode})`,
-      originalOf: (langCode) => `ORIGINAL (${langCode})`,
     },
     demo8: {
       durationLabel: 'Duration',
@@ -374,10 +309,6 @@ export const rttText: Record<UiLang, RttDict> = {
       endedSubtitle: 'With David’s iPad. The transcript has been saved on your device.',
       backToDevices: 'Back to device list',
       exportTxt: 'Export transcript (.txt)',
-    },
-    placeholder: {
-      subtitle: 'This screen will be built out according to the design.',
-      continue: 'Continue →',
     },
     errors: {
       deviceBusy: 'Device is busy.',

@@ -7,7 +7,7 @@
  *     read/restart rồi gộp PCM.
  *
  * Mỗi cụm là một `audio.chunk` (backend STT+NMT+TTS → audio phát cuốn chiếu trên
- * máy người nghe). KHÔNG còn gửi `audio.partial` (dịch dự đoán) trong luồng này.
+ * máy người nghe). Không có dịch dự đoán: nghe gì ghi nấy.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';

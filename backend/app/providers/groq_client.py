@@ -1,7 +1,7 @@
 """Async helpers over the Groq OpenAI-compatible REST API.
 
 Shared by the cloud STT and NMT providers. Groq's free tier serves Whisper for
-speech-to-text and Llama chat models for translation, behind `gsk_...` key(s).
+speech-to-text and chat LLMs (Qwen) for translation, behind `gsk_...` key(s).
 
 Request-building and response-parsing helpers are pure functions (unit-testable
 without network or a key); only `_transcribe`/`_chat` do I/O.
@@ -14,6 +14,8 @@ from __future__ import annotations
 import httpx
 
 _TIMEOUT = 45.0
+# Whisper segments with no_speech_prob at/above this are treated as noise.
+NO_SPEECH_PROB_MAX = 0.5
 
 # BCP-47-ish language code -> human-readable name used in translation prompts.
 _LANG_NAMES = {"vi": "Vietnamese", "en": "English"}
@@ -42,18 +44,22 @@ def build_translate_messages(text: str, source_lang: str, target_lang: str) -> l
     ]
 
 
-def build_partial_translate_messages(text: str, source_lang: str, target_lang: str) -> list[dict]:
-    """Messages for a partial segment — same basic prompt as the full translate
-    (no prediction / no context-aware interpreter persona)."""
-    return build_translate_messages(text, source_lang, target_lang)
-
-
 def extract_transcript(response_json: dict) -> str:
     """Pull the transcript text out of an audio/transcriptions response."""
     if "error" in response_json:
         err = response_json["error"]
         msg = err.get("message", "unknown error") if isinstance(err, dict) else str(err)
         raise RuntimeError(f"Groq STT error: {msg}")
+    segments = response_json.get("segments")
+    if segments is not None:
+        # verbose_json: drop segments Whisper itself rates as non-speech — that is
+        # where noise-born hallucinations ("Ghiền Mì Gõ", outros) come from. All
+        # dropped -> "" (silence, skipped by the handler), not an error.
+        return " ".join(
+            (s.get("text") or "").strip()
+            for s in segments
+            if s.get("no_speech_prob", 0.0) < NO_SPEECH_PROB_MAX
+        ).strip()
     text = (response_json.get("text") or "").strip()
     if not text:
         raise RuntimeError("Groq STT returned empty text.")
@@ -80,7 +86,7 @@ async def _transcribe(
 ) -> dict:
     """POST audio to /audio/transcriptions (multipart) and return parsed JSON."""
     url = f"{base_url.rstrip('/')}/audio/transcriptions"
-    data = {"model": model, "response_format": "json", "temperature": "0"}
+    data = {"model": model, "response_format": "verbose_json", "temperature": "0"}
     # "auto" / empty -> let Whisper detect the language.
     if source_lang and source_lang.lower() != "auto":
         data["language"] = source_lang.lower()
@@ -135,10 +141,3 @@ async def translate_text(
     messages = build_translate_messages(text, source_lang, target_lang)
     return extract_chat_text(await _chat(api_key, base_url, model, messages))
 
-
-async def translate_partial(
-    api_key: str, base_url: str, model: str, text: str, source_lang: str, target_lang: str
-) -> str:
-    """Faithful real-time translation of a partial (still-being-spoken) transcript."""
-    messages = build_partial_translate_messages(text, source_lang, target_lang)
-    return extract_chat_text(await _chat(api_key, base_url, model, messages))

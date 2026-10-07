@@ -2,9 +2,10 @@
  * Màn NGHE/NÓI hợp nhất (thay Demo4 Meeting + Demo6 YourTurn).
  *
  * Immersive: hero chữ lớn GIỮA màn hiện đoạn voice + bản dịch. Push-to-talk bằng
- * nút "Nhấn giữ để nói" hoặc giữ phím Space (web). Bấm phím Alt (web) bật/tắt
- * panel "Lịch sử dịch" dạng bong bóng chat (lời mình phải, đối tác trái). Chỉ push-to-
- * talk, không có chế độ rảnh tay.
+ * nút "Nhấn giữ để nói" hoặc giữ phím Space (web). Nút Lịch sử / phím H (web) mở
+ * panel "Lịch sử dịch" dạng bong bóng chat (lời mình phải, đối tác trái): ngăn bên
+ * phải trên màn rộng (vẫn thấy hero), tấm trượt từ dưới trên điện thoại. Esc / chạm
+ * nền / nút ✕ để đóng. Chỉ push-to-talk, không có chế độ rảnh tay.
  *
  *   - Đang nghe: hero = bản dịch sang ngôn ngữ CỦA BẠN + câu gốc; top "Đang nghe".
  *   - Đang nói (giữ nút/Space): hero accent = lời bạn + "Đang gửi tới đối tác…".
@@ -12,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AlertTriangle, History, Lock, Mic, PhoneOff, Volume2 } from 'lucide-react-native';
+import { AlertTriangle, History, Lock, Mic, PhoneOff, Volume2, X } from 'lucide-react-native';
 
 import { useMeetingMic, useResponsive, useRttT } from '@/components/hooks';
 import type { RttStackScreenProps } from '@/navigation/rttTypes';
@@ -106,13 +107,11 @@ function HistoryBubble({
   peerName,
   srcLang,
   dstLang,
-  compact,
 }: {
   turn: TranslatorTurn;
   peerName: string;
   srcLang: string;
   dstLang: string;
-  compact: boolean;
 }) {
   const t = useRttT();
   const mine = turn.mine === true;
@@ -123,7 +122,7 @@ function HistoryBubble({
       <View
         className={`gap-1.5 rounded-2xl border bg-tp-surface p-3.5 ${
           mine ? 'border-tp-accent' : 'border-tp-border'
-        } ${compact ? 'max-w-[88%]' : 'w-[560px] max-w-full'}`}
+        } max-w-[88%]`}
       >
         <View className="flex-row items-center gap-2">
           <Text className="text-[13px] font-semibold text-tp-text">{label}</Text>
@@ -204,9 +203,10 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
           spaceHeld.current = true;
           startRef.current();
         }
-      } else if (e.key === 'Alt') {
-        e.preventDefault();
-        // Bấm (không giữ) để bật/tắt. `e.repeat` chặn auto-repeat khi giữ phím.
+      } else if (e.key === 'Escape') {
+        setHistoryOpen(false);
+      } else if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // H bật/tắt (không dùng Alt: Windows/trình duyệt nuốt phím Alt).
         if (!e.repeat) setHistoryOpen((v) => !v);
       }
     };
@@ -335,7 +335,10 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
             className="flex-row items-center gap-1.5 rounded-full border border-tp-border bg-tp-surface px-3 py-2"
           >
             <History size={15} color={TP.text2} />
-            {!compact && <Text className="text-[13px] text-tp-text2">{t.demo4.history}</Text>}
+            <Text className="text-[13px] text-tp-text2">
+              {compact ? '' : t.demo4.history}
+              {turns.length > 0 ? `${compact ? '' : ' · '}${turns.length}` : ''}
+            </Text>
           </Pressable>
           <Pressable
             onPress={endMeeting}
@@ -474,54 +477,65 @@ export function Demo4Meeting({ navigation }: RttStackScreenProps<'Meeting'>) {
         )}
       </View>
 
-      {/* Panel Lịch sử dịch — mở bằng giữ Alt (web) hoặc chạm nút Lịch sử */}
+      {/* Panel Lịch sử dịch — ngăn phải (màn rộng) / tấm trượt dưới (điện thoại).
+          Nền mờ nhẹ để hero vẫn đọc được; chạm nền để đóng. */}
       {historyOpen && (
-        <View className="absolute inset-0" style={{ backgroundColor: 'rgba(6,9,12,0.94)', paddingTop: insets.top }}>
+        <View className="absolute inset-0">
+          <Pressable
+            className="absolute inset-0"
+            style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+            onPress={() => setHistoryOpen(false)}
+            accessibilityLabel={t.demo4.close}
+          />
           <View
-            className={`flex-row items-center justify-between border-b border-tp-border ${
-              compact ? 'px-4 py-3' : 'px-8 py-[18px]'
+            className={`absolute bg-tp-bg ${
+              compact
+                ? 'bottom-0 left-0 right-0 h-[75%] rounded-t-3xl border-t border-tp-border'
+                : 'bottom-0 right-0 top-0 w-[400px] max-w-full border-l border-tp-border'
             }`}
+            style={compact ? undefined : { paddingTop: insets.top }}
           >
-            <View className="flex-row items-center gap-2.5">
-              <History size={18} color={TP.accent} />
-              <Text className="text-lg font-semibold text-tp-text">{t.common.historyTitle}</Text>
+            <View className="flex-row items-center justify-between border-b border-tp-border px-4 py-3">
+              <View className="flex-row items-center gap-2.5">
+                <History size={18} color={TP.accent} />
+                <Text className="text-lg font-semibold text-tp-text">{t.common.historyTitle}</Text>
+              </View>
+              <Pressable
+                onPress={() => setHistoryOpen(false)}
+                accessibilityLabel={t.demo4.close}
+                hitSlop={8}
+                className="rounded-full border border-tp-border bg-tp-surface p-2"
+              >
+                <X size={16} color={TP.text2} />
+              </Pressable>
             </View>
-            <Pressable
-              onPress={() => setHistoryOpen(false)}
-              className="rounded-full border border-tp-border bg-tp-surface px-4 py-2"
+            <ScrollView
+              ref={historyScroll}
+              className="flex-1"
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingTop: 16,
+                paddingBottom: insets.bottom + 24,
+                gap: 12,
+              }}
             >
-              <Text className="text-sm text-tp-text2">
-                {Platform.OS === 'web' ? t.demo4.closeWeb : t.demo4.close}
-              </Text>
-            </Pressable>
+              {turns.length === 0 ? (
+                <Text className="py-10 text-center text-base text-tp-muted">
+                  {t.demo4.emptyHistory}
+                </Text>
+              ) : (
+                turns.map((turn) => (
+                  <HistoryBubble
+                    key={turn.id}
+                    turn={turn}
+                    peerName={peerName}
+                    srcLang={srcLang}
+                    dstLang={dstLang}
+                  />
+                ))
+              )}
+            </ScrollView>
           </View>
-          <ScrollView
-            ref={historyScroll}
-            className="flex-1"
-            contentContainerStyle={{
-              paddingHorizontal: compact ? 16 : 32,
-              paddingVertical: 16,
-              paddingBottom: insets.bottom + 24,
-              gap: 12,
-            }}
-          >
-            {turns.length === 0 ? (
-              <Text className="py-10 text-center text-base text-tp-muted">
-                {t.demo4.emptyHistory}
-              </Text>
-            ) : (
-              turns.map((t) => (
-                <HistoryBubble
-                  key={t.id}
-                  turn={t}
-                  peerName={peerName}
-                  srcLang={srcLang}
-                  dstLang={dstLang}
-                  compact={compact}
-                />
-              ))
-            )}
-          </ScrollView>
         </View>
       )}
     </View>

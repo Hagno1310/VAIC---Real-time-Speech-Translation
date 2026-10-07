@@ -61,16 +61,6 @@ class NMTProvider(ABC):
         """Translate `text` from `source_lang` to `target_lang`."""
         raise NotImplementedError
 
-    async def translate_partial(
-        self, text: str, source_lang: str, target_lang: str
-    ) -> str:
-        """Faithful translation of a partial, still-being-spoken transcript.
-
-        Used by the live streaming path so a translation can appear WHILE the
-        speaker is still talking. Providers may override with a prompt tuned for
-        partial input; the default simply reuses `translate`.
-        """
-        return await self.translate(text, source_lang, target_lang)
 
 
 class TTSProvider(ABC):

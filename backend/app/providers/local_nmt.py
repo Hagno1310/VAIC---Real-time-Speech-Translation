@@ -48,18 +48,3 @@ class LocalNMTProvider(NMTProvider):
             source_lang,
             target_lang,
         )
-
-    async def translate_partial(
-        self, text: str, source_lang: str, target_lang: str
-    ) -> str:
-        """Streaming translation of a partial, still-being-spoken transcript."""
-        from . import groq_client
-
-        return await groq_client.translate_partial(
-            self._key,
-            self._url,
-            self._model,
-            text,
-            source_lang,
-            target_lang,
-        )

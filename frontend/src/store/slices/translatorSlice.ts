@@ -4,10 +4,9 @@
  * Sở hữu một `TranslatorSocket`, nối sự kiện server vào state, cung cấp action
  * cho UI. Theo logic bản test chuẩn (backend hoang-dev, static/index.html):
  *
- *   - Đang nói: gửi `audio.partial` (cửa sổ audio tích luỹ) định kỳ →
- *     server trả `stt.partial` + `nmt.partial` (bản dịch TẠM, tự sửa) →
- *     cập nhật `live` tại chỗ.
- *   - Dừng nói: gửi `audio.chunk` (bản chốt) → `nmt.result` → chốt vào `turns`,
+ *   - Mỗi cụm VAD: gửi `audio.chunk` → `stt.final` (lời mình) / `nmt.result`
+ *     (lời đối tác) — nghe gì ghi nấy, không có bản dịch tạm/dự đoán.
+ *   - Dừng nói: gửi `audio.chunk` cuối → `nmt.result` → chốt vào `turns`,
  *     `tts.audio` → phát giọng (edge-tts MP3).
  *
  * Vòng lặp thu âm + coalesce nằm ở tầng mic (Phase 2); slice chỉ forward `send`.
@@ -68,12 +67,9 @@ export interface TranslatorSlice {
   turns: TranslatorTurn[];
   /** Các segment đã cắt trong LƯỢT hiện tại (dùng cho card bên trái Demo6). */
   sessionSegments: TranslatorTurn[];
-  /** Bong bóng "đang nói" hiện tại (từ stt.partial / nmt.partial), hoặc null. */
+  /** Bong bóng "đang nói" hiện tại (từ stt.partial), hoặc null. */
   live: LiveLine | null;
   metrics: TurnMetrics | null;
-  /** Tăng mỗi khi một partial được phản hồi (nmt.partial/result/error) — dùng để
-   *  mic coalesce: chỉ gửi cửa sổ kế tiếp khi cửa sổ trước đã có kết quả. */
-  partialResponses: number;
   /** Tín hiệu audio TTS đang phát cho lượt đối tác — để hero gõ chữ khớp giọng. */
   audioCue: AudioCue | null;
 
@@ -133,8 +129,6 @@ export interface TranslatorSlice {
 
   /** Mở một lượt nói mới (xoá live + segment cũ, đảm bảo đúng chiều dịch). */
   startTurn: (speaker: Speaker) => void;
-  /** Gửi cửa sổ audio tích luỹ khi đang nói (bản dịch tạm sẽ về qua nmt.partial). */
-  sendPartialAudio: (speaker: Speaker, wavBase64: string) => void;
   /** Chốt MỘT segment (cắt ở 4 dòng): audio.chunk → nmt.result → thêm vào sessionSegments. */
   commitSegment: (speaker: Speaker, wavBase64: string) => void;
   /** Kết thúc lượt (nhấn Dừng): audio.chunk cuối → gộp toàn bộ segment thành 1 entry lịch sử. */
@@ -233,11 +227,10 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
         break;
       case 'stt.partial': {
         // Khi TÔI nói: chỉ stt.* + metrics quay về máy tôi (nmt/tts đã route
-        // sang đối tác). Dùng chính stt.partial để nhả cổng coalesce của mic.
+        // sang đối tác).
         const live = get().live;
         set({
           live: { speaker: event.data.speaker, srcText: event.data.text, dstText: live?.dstText ?? '' },
-          partialResponses: get().partialResponses + 1,
         });
         break;
       }
@@ -246,9 +239,7 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
         // sử của mình để máy tôi có bản ghi đúng những gì tôi đã nói. Backend đã
         // chặn im lặng nên không còn câu ảo lọt vào đây.
         const text = event.data.text.trim();
-        const next: { partialResponses: number; turns?: TranslatorTurn[]; live?: LiveLine | null } = {
-          partialResponses: get().partialResponses + 1,
-        };
+        const next: { turns?: TranslatorTurn[]; live?: LiveLine | null } = {};
         if (text) {
           // dstText để trống → chờ bản dịch của mình về qua `nmt.self` điền vào.
           const mineTurn: TranslatorTurn = {
@@ -270,12 +261,6 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
         set({ ...next, audioCue: null });
         break;
       }
-      case 'nmt.partial':
-        set({
-          live: { speaker: event.data.speaker, srcText: event.data.srcText, dstText: event.data.dstText },
-          partialResponses: get().partialResponses + 1,
-        });
-        break;
       case 'nmt.self': {
         // Bản dịch của CHÍNH MÌNH quay về → điền vào bong bóng mình mới nhất còn
         // trống dstText (tạo bởi stt.final). Không thấy thì thêm mới.
@@ -294,7 +279,7 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
             srcText: event.data.srcText || updated[idx].srcText,
             dstText: event.data.dstText,
           };
-          set({ turns: updated, partialResponses: get().partialResponses + 1 });
+          set({ turns: updated });
         } else {
           set({
             turns: [
@@ -307,7 +292,6 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
                 mine: true,
               },
             ],
-            partialResponses: get().partialResponses + 1,
           });
         }
         break;
@@ -326,7 +310,6 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
         set({
           live: null,
           turns: [...get().turns, seg],
-          partialResponses: get().partialResponses + 1,
           audioCue: null, // sẽ set lại khi tts.audio thực sự phát
         });
         break;
@@ -343,12 +326,11 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
         break;
       }
       case 'metrics':
-        set({ metrics: event.data, partialResponses: get().partialResponses + 1 });
+        set({ metrics: event.data });
         break;
       case 'error':
         set({
           live: null,
-          partialResponses: get().partialResponses + 1,
           translatorError: `[${event.data.code}] ${event.data.message}`,
         });
         break;
@@ -421,7 +403,6 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
     sessionSegments: [],
     live: null,
     metrics: null,
-    partialResponses: 0,
     audioCue: null,
 
     myClientId: null,
@@ -631,13 +612,6 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
     startTurn: (_speaker) => {
       ensureSession();
       set({ live: null, sessionSegments: [], _finalizePending: false, translatorError: null });
-    },
-
-    sendPartialAudio: (speaker, wavBase64) => {
-      const { _socket } = get();
-      if (!_socket || !_socket.isOpen) return;
-      ensureSession();
-      _socket.send({ type: 'audio.partial', data: { speaker, audio: wavBase64 } });
     },
 
     commitSegment: (speaker, wavBase64) => {

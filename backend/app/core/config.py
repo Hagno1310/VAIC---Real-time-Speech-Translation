@@ -10,6 +10,8 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .env_file import ENV_PATH
+
 
 class Settings(BaseSettings):
     """Runtime settings for the translator backend.
@@ -19,7 +21,7 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_PATH,  # absolute: next to the exe / in backend/
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -108,7 +110,7 @@ class Settings(BaseSettings):
     # Whisper model for speech-to-text.
     groq_stt_model: str = "whisper-large-v3"
     # Chat model used to translate the transcript (both directions).
-    groq_nmt_model: str = "llama-3.3-70b-versatile"
+    groq_nmt_model: str = "qwen/qwen3.8-27b"
 
     # --- NMT engine selection --------------------------------------------
     # Which NMT engine to use. Applies to `mode=offline` (replacing NLLB) and,
@@ -149,8 +151,6 @@ class Settings(BaseSettings):
     # Beam size for the authoritative translation (audio.chunk / text.final).
     # Higher = more accurate, slower. On GPU 5 is cheap; on CPU keep it low.
     offline_nmt_beam_final: int = 4
-    # Beam size for streaming partials (audio.partial / text.partial); 1 = greedy.
-    offline_nmt_beam_partial: int = 1
     # CTranslate2 intra-op threads; 0 = let CTranslate2 choose.
     offline_nmt_intra_threads: int = 0
     # CTranslate2 device/precision for NLLB. "cpu" + "int8" is the safe default;
@@ -165,6 +165,10 @@ class Settings(BaseSettings):
     # if silence still produces phantom text.
     stt_silence_rms: float = 0.006
     stt_min_speech_ms: int = 300
+    # Silero VAD speech probability (0..1) a frame needs to count as voice. Only
+    # VAD-detected speech is sent to STT (core/audio_utils.speech_only). Raise it
+    # if background noise still turns into text; lower it if soft speech is lost.
+    stt_vad_threshold: float = 0.5
 
     @property
     def cors_origin_list(self) -> list[str]:

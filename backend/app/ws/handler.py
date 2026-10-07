@@ -111,10 +111,6 @@ async def dispatch(
         await _on_session_start(ws, session, data)
     elif event == "audio.chunk":
         await _on_audio_chunk(ws, session, data, manager)
-    elif event == "audio.partial":
-        await _on_audio_partial(ws, session, data, manager)
-    elif event == "text.partial":
-        await _on_text_partial(ws, session, data, manager)
     elif event == "text.final":
         await _on_text_final(ws, session, data, manager)
     elif event == "config.update":
@@ -269,84 +265,6 @@ async def _on_session_end(ws: WebSocket, session: SessionState, data: dict) -> N
     """Handle session.end: zero-retention cleanup and acknowledge."""
     session.cleanup()
     await send(ws, "session.ended", {})
-
-
-async def _on_audio_partial(
-    ws: WebSocket, session: SessionState, data: dict, manager: "ConnectionManager | None" = None
-) -> None:
-    """Live streaming turn: transcribe a growing audio window and emit a
-    translation of what has been said SO FAR, while the speaker keeps talking.
-
-    Best-effort: any failure is swallowed (no `error` event, no disconnect) —
-    a dropped partial is harmless; the authoritative result still arrives via
-    `audio.chunk` -> `nmt.result`.
-    """
-    if not session.started or session.providers is None:
-        return
-
-    speaker = data.get("speaker", "unknown")
-    try:
-        audio = base64.b64decode(data.get("audio", ""), validate=False)
-    except (binascii.Error, ValueError):
-        return
-
-    try:
-        # Transcribe the window; take its final hypothesis as the text-so-far.
-        window_text: str | None = None
-        with Stopwatch() as sw_stt_p:
-            async for result in session.providers.stt.transcribe(audio, session.source_lang):
-                if result.is_final:
-                    window_text = result.text
-        if not window_text or not window_text.strip():
-            return
-
-        # STT of what I said → back to me; translation preview → to my peer.
-        await send(ws, "stt.partial", {"speaker": speaker, "text": window_text})
-
-        with Stopwatch() as sw_p:
-            dst_text = await session.providers.nmt.translate_partial(
-                window_text, session.source_lang, session.target_lang
-            )
-        dst_text = apply_glossary(dst_text, session.glossary_id, session.target_lang)
-        # [LATENCY] partial path: "first text on screen as you speak".
-        log.info(
-            "[LATENCY][partial] speaker=%s audioBytes=%d partialSttMs=%.0f partialNmtMs=%.0f -> nmt.partial emitted",
-            speaker, len(audio), sw_stt_p.ms, sw_p.ms,
-        )
-        await _emit(ws, session, manager, "nmt.partial", {
-            "speaker": speaker,
-            "srcText": window_text,
-            "dstText": dst_text,
-            "isFinal": False,
-        }, to_peer=True)
-    except Exception as exc:  # noqa: BLE001 - partials are best-effort
-        log.info("partial turn skipped for speaker=%s: %s", speaker, exc)
-
-
-async def _on_text_partial(
-    ws: WebSocket, session: SessionState, data: dict, manager: "ConnectionManager | None" = None
-) -> None:
-    """Translate an unfinished text segment from a browser-side STT (Cloud mode).
-
-    Best-effort: failures are swallowed (no error event); the confirmed segment
-    still arrives via text.final -> nmt.result.
-    """
-    if not session.started or session.providers is None:
-        return
-    speaker = data.get("speaker", "unknown")
-    text = (data.get("text") or "").strip()
-    if not text:
-        return
-    try:
-        dst_text = await session.providers.nmt.translate_partial(
-            text, session.source_lang, session.target_lang
-        )
-        dst_text = apply_glossary(dst_text, session.glossary_id, session.target_lang)
-        await _emit(ws, session, manager, "nmt.partial", {
-            "speaker": speaker, "srcText": text, "dstText": dst_text, "isFinal": False,
-        }, to_peer=True)
-    except Exception as exc:  # noqa: BLE001 - partials are best-effort
-        log.info("text.partial skipped for speaker=%s: %s", speaker, exc)
 
 
 async def _on_text_final(

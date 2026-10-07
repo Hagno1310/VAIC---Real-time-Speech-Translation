@@ -15,10 +15,11 @@ so the same is_silence() / looks_like_hallucination() guards are applied here.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 
-from ..core.audio_utils import is_silence, looks_like_hallucination
+from ..core.audio_utils import is_silence, looks_like_hallucination, speech_only
 from ..core.config import settings
 from .base import STTProvider, STTResult
 
@@ -95,8 +96,12 @@ class PhoWhisperSTTProvider(STTProvider):
         if is_silence(audio):
             yield STTResult(text="", lang=code, is_final=True)
             return
+        # Send Whisper ONLY detected human speech — noise alone becomes canned text.
+        audio = await asyncio.to_thread(speech_only, audio)
+        if audio is None:
+            yield STTResult(text="", lang=code, is_final=True)
+            return
 
-        import asyncio
         import io
 
         import numpy as np

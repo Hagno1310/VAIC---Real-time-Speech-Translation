@@ -76,6 +76,37 @@ def is_silence(wav: bytes) -> bool:
     return rms < settings.stt_silence_rms
 
 
+def speech_only(wav: bytes) -> bytes | None:
+    """Keep only the human-speech parts of `wav` (Silero VAD); None = no speech.
+
+    The energy gate cannot tell a fan, keyboard or room noise from a voice, and
+    Groq Whisper turns pure noise into confident YouTube outros ("Cảm ơn các bạn
+    đã theo dõi", no_speech_prob only ~0.2-0.45). So Whisper must only ever hear
+    detected speech. Returns `wav` unchanged when VAD is unavailable (deploy
+    image without faster-whisper) or the input is not 16 kHz PCM WAV.
+    """
+    parsed = _parse_wav(wav)
+    if parsed is None or parsed[0] != 16000:
+        return wav
+    try:
+        import numpy as np
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+    except ImportError:
+        return wav
+    audio = np.frombuffer(parsed[1][: len(parsed[1]) // 2 * 2], dtype="<i2").astype(np.float32) / 32768.0
+    spans = get_speech_timestamps(
+        audio,
+        VadOptions(threshold=settings.stt_vad_threshold, min_silence_duration_ms=500, speech_pad_ms=200),
+    )
+    speech = np.concatenate([audio[s["start"] : s["end"]] for s in spans]) if spans else audio[:0]
+    if len(speech) / 16000 * 1000 < settings.stt_min_speech_ms:
+        return None
+    pcm = (np.clip(speech, -1.0, 1.0) * 32767).astype("<i2").tobytes()
+    header = b"RIFF" + struct.pack("<I", 36 + len(pcm)) + b"WAVEfmt "
+    header += struct.pack("<IHHIIHH", 16, 1, 1, 16000, 32000, 2, 16) + b"data" + struct.pack("<I", len(pcm))
+    return header + pcm
+
+
 # Exact phrases Whisper/Groq emit on non-silent noise (lowercased, punctuation
 # stripped). Backstop only — the energy gate handles the common silence case.
 _HALLUCINATION_PHRASES: frozenset[str] = frozenset(
@@ -97,8 +128,24 @@ _HALLUCINATION_PHRASES: frozenset[str] = frozenset(
 )
 
 
+# Multi-word markers distinctive enough to flag a transcript that merely CONTAINS
+# them (Whisper pads them: "Hãy subscribe cho kênh Ghiền Mì Gõ Để không bỏ lỡ…").
+# Never add short/common words here — that would drop real meeting speech.
+_HALLUCINATION_MARKERS: tuple[str, ...] = (
+    "ghiền mì gõ",
+    "subscribe cho kênh",
+    "đăng ký kênh",
+    "video tiếp theo",
+    "video hấp dẫn",
+    "cảm ơn các bạn đã theo dõi",
+    "thanks for watching",
+    "thank you for watching",
+    "like and subscribe",
+)
+
+
 def looks_like_hallucination(text: str) -> bool:
-    """True if the whole transcript is exactly a known canned hallucination."""
+    """True if the transcript is a known canned hallucination."""
     norm = "".join(c for c in (text or "").lower().strip() if c.isalnum() or c.isspace())
     norm = " ".join(norm.split())
-    return norm in _HALLUCINATION_PHRASES
+    return norm in _HALLUCINATION_PHRASES or any(m in norm for m in _HALLUCINATION_MARKERS)

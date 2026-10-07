@@ -1,6 +1,6 @@
 """Cloud providers: STT + NMT via Groq, TTS stub. Fall back to Mock when no key.
 
-STT (Whisper) and NMT (Llama) run on Groq's OpenAI-compatible API. Each stage
+STT (Whisper) and NMT (Qwen chat) run on Groq's OpenAI-compatible API. Each stage
 uses its own key if set (`GROQ_STT_API_KEY` / `GROQ_NMT_API_KEY`) so rate limits
 can be split, otherwise the shared `GROQ_API_KEY`. If no key is configured, the
 provider transparently falls back to the corresponding MockProvider so the demo
@@ -8,10 +8,11 @@ never breaks.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 
-from ..core.audio_utils import is_silence, looks_like_hallucination
+from ..core.audio_utils import is_silence, looks_like_hallucination, speech_only
 from ..core.config import settings
 from .base import NMTProvider, STTProvider, STTResult, TTSProvider
 from .mock import MockNMTProvider, MockSTTProvider, MockTTSProvider
@@ -46,6 +47,11 @@ class CloudSTTProvider(STTProvider):
         # Guard: never send a silent/too-short window to Whisper — it hallucinates
         # ("Thank you.", "Let's go!", ...) on silence, polluting the transcript.
         if is_silence(audio):
+            yield STTResult(text="", lang=source_lang, is_final=True)
+            return
+        # Send Whisper ONLY detected human speech — noise alone becomes canned text.
+        audio = await asyncio.to_thread(speech_only, audio)
+        if audio is None:
             yield STTResult(text="", lang=source_lang, is_final=True)
             return
 
@@ -97,21 +103,6 @@ class CloudNMTProvider(NMTProvider):
             target_lang,
         )
 
-    async def translate_partial(self, text: str, source_lang: str, target_lang: str) -> str:
-        """Translate a partial transcript (live streaming path)."""
-        if not self._enabled:
-            return await self._fallback.translate(text, source_lang, target_lang)
-
-        from . import groq_client
-
-        return await groq_client.translate_partial(
-            self._key or "",
-            settings.groq_api_url,
-            settings.groq_nmt_model,
-            text,
-            source_lang,
-            target_lang,
-        )
 
 
 class CloudTTSProvider(TTSProvider):

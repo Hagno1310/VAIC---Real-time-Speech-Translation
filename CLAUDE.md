@@ -9,10 +9,10 @@ that talk over a **single WebSocket** (`ws://<host>:8000/ws`) using a
 `{"type": <event>, "data": {...}}` envelope in both directions:
 
 - `backend/` — FastAPI + WebSocket STT → NMT → TTS pipeline (Python). Cloud mode
-  runs on **Groq** (Whisper STT + Llama NMT).
+  runs on **Groq** (Whisper STT + Qwen chat NMT).
 - `frontend/` — **Expo / React Native (mobile)** app. The **RTT** flow
-  (`src/screens/rtt/Demo1..Demo8`, minus Demo6 — push-to-talk lives in the
-  Meeting screen, not its own file) is the live translator UI.
+  (`src/screens/rtt/Demo1-4` + `Demo8` — push-to-talk and the history panel
+  live in the Meeting screen, not their own files) is the live translator UI.
 
 **Primary product = LAN 1:1 pairing ("chat nội bộ").** Two devices point at the
 *same* backend on the LAN, discover each other in a lobby, pair into a 1:1 room,
@@ -37,7 +37,6 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload          # http://localhost:8000; WS /ws; health JSON at /; test console at /app
 uvicorn app.main:app --host 0.0.0.0 --port 8000   # reachable by other LAN devices (pairing)
 python tools/check_groq_key.py         # verify a Groq key works (STT+NMT via one gsk_ key)
-python tools/test_stream_client.py --wav file.wav --src en --tgt vi   # streaming WS test
 python tools/talk_translate.py --mode cloud --src vi --tgt en         # mic → server → transcript+translation
 python tools/record_stt.py             # mic → real Faster-Whisper STT → Markdown (no server)
 python tools/prepare_nllb.py           # build CTranslate2 int8 NLLB dir for offline NMT (offline_nmt_model_dir)
@@ -71,8 +70,7 @@ Pairing-specific frontend facts (protocol-spanning, not in `frontend/claude.md`)
 `store/slices/translatorSlice.ts` owns one `TranslatorSocket` plus the lobby/room
 state (`devices`, `room`, `incomingInvite`, `myClientId`) and drives the flow —
 Demo1 `enterLobby`→`hello`, Demo2 lobby+`invite`, Demo3 `accept`, Demo4 Meeting
-+ Demo5 listener view; push-to-talk (`useMeetingMic`, sends `audio.partial`/`chunk`)
-lives in the Meeting screen (there is no Demo6 file), Demo7 History, Demo8 end session.
+(push-to-talk via `useMeetingMic` + the in-meeting history panel), Demo8 end session.
 Because translation routes to the peer, the **speaker records its own words from
 `stt.final`** (`turn.mine=true`); the **listener records the peer's from
 `nmt.result`** (`mine=false`). `services/audioPlayback.ts` is platform-split: web
@@ -85,7 +83,7 @@ writes a temp file for expo-audio.
 abstract contract in `app/providers/base.py`. Concrete trios implement it:
 
 - `mock.py` — works instantly, no models/keys. Default mode.
-- `cloud.py` — **Groq only** (Whisper STT + Llama chat NMT). Falls back to the
+- `cloud.py` — **Groq only** (Whisper STT + Qwen chat NMT). Falls back to the
   matching mock provider when the key is missing. (Gemini has been removed.)
 - `offline.py` — local models, **all three stages now implemented** (the
   module docstring calling NMT/TTS stubs is stale). `factory.py` picks the
@@ -142,22 +140,17 @@ session still gets edge-tts audio. `session.tts_on` still defaults **False**; th
 
 ### Groq cloud (`cloud.py` + `groq_client.py`)
 - STT = `whisper-large-v3` (multipart `/audio/transcriptions`); NMT =
-  `llama-3.3-70b-versatile` (`/chat/completions`), bidirectional.
+  `qwen/qwen3.8-27b` (`/chat/completions`), bidirectional.
 - **Split rate limits:** `GROQ_STT_API_KEY` / `GROQ_NMT_API_KEY` each fall back to
   the shared `GROQ_API_KEY`. `groq_client.py`'s request/response builders are
   pure functions; only `_transcribe`/`_chat` do I/O.
 
-### Two live streaming paths (both end with an authoritative final)
-- **Audio path** — client streams growing audio windows as `audio.partial`
-  (backend runs STT+NMT → `stt.partial` + `nmt.partial`); `audio.chunk` is the
-  final lock → `stt.final` + `nmt.result`. `_on_audio_partial` is best-effort
-  (swallows errors). Clients should coalesce (≤1 partial in flight) to avoid Groq
-  rate limits. **Note:** the RN meeting mic (`useMeetingMic`) now sends **only
-  per-VAD-segment `audio.chunk`** (no `audio.partial`); the partial path remains
-  for the `/app` console and other clients.
-- **Text path** — client already has the transcript (e.g. browser STT) and sends
-  `text.partial` / `text.final`; the backend only **translates** (no STT) →
-  `nmt.partial` / `nmt.result`.
+### No predictive translation (deliberate — "nghe gì ghi nấy")
+There is **no** `audio.partial` / `text.partial` / `nmt.partial` path anymore
+(removed along with `NMTProvider.translate_partial`). Input is either per-VAD-
+segment `audio.chunk` (→ `stt.final` + `nmt.result`) or `text.final` (client
+already has the transcript; backend only translates). Unknown events get an
+`unknown_event` error. Do not reintroduce draft/predicted translations.
 
 ### Turn flow (`_on_audio_chunk`)
 `audio.chunk` → STT (times `sttMs`) → NMT (times `nmtMs`, then `apply_glossary`)
@@ -199,7 +192,7 @@ self-loop never had. `app/main.py` passes it into `dispatch`; on disconnect the
   translates its own language into the peer's — this is why the app needs no
   explicit `session.start`.
 - **Routing is the core** (`handler._emit(..., to_peer=True)`): in a room,
-  `nmt.partial` / `nmt.result` / `tts.audio` go to the **peer**; `stt.*` +
+  `nmt.result` / `tts.audio` go to the **peer**; `stt.*` +
   `metrics` stay on the **speaker**. With no peer (`client_id` unset → the `/app`
   console), everything falls back to `send(ws, ...)` — the self-loop, unchanged.
   So the speaker sees only their own transcript; the listener gets the

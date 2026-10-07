@@ -2,9 +2,8 @@
  * Root navigator.
  *
  * Auth is currently DISABLED for the backend demo build: the app boots straight
- * into the Main flow (see the Translator demo tab). The Auth stack and the
- * `isAuthenticated` gate are kept in the codebase — re-enable them by restoring
- * the commented conditional below when auth is needed again.
+ * into the RTT flow. The Auth stack/screens were removed from source — restore
+ * them from git history when auth is needed again.
  */
 
 import {

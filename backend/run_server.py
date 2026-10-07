@@ -1,8 +1,9 @@
 """Entry point cho backend đóng gói (PyInstaller) — chạy offline, tự tìm model.
 
 Khi chạy dưới dạng exe (frozen), model được ship trong thư mục `models/` NẰM CẠNH
-exe. Script này set sẵn các biến môi trường trỏ tới đó (nếu chưa có), rồi chạy
-uvicorn — nên app không cần `.env` và không tải gì từ mạng.
+exe. Lần chạy đầu (chưa có `.env` cạnh exe) script sinh `.env` với mặc định offline
+trỏ tới các model đó rồi mở trình duyệt vào trang cấu hình `/setup`. Từ đó `.env`
+là nguồn cấu hình duy nhất (sửa qua `/setup`), không dùng biến môi trường ẩn.
 
 Layout khi đóng gói:
     <exe_dir>/
@@ -27,44 +28,54 @@ def _base_dir() -> str:
     return os.path.dirname(os.path.abspath(__file__))
 
 
-def _apply_offline_defaults() -> None:
-    """Set mặc định offline + đường dẫn model cạnh exe (chỉ khi đóng gói frozen).
+def _ensure_env() -> bool:
+    """Bản exe: lần đầu chưa có `.env` thì sinh từ `.env.example` + mặc định
+    offline trỏ tới model cạnh exe. Trả True nếu vừa tạo (→ mở trang /setup).
 
-    Ở chế độ dev (chạy bằng python) thì bỏ qua để `.env` điều khiển như thường.
+    Chế độ dev (chạy bằng python) thì bỏ qua để `.env` của dev điều khiển.
     """
     if not getattr(sys, "frozen", False):
-        return
+        return False
+    from app.core.env_file import ENV_PATH, write_env  # không đụng tới settings
+
+    if ENV_PATH.exists():
+        return False
     models = os.path.join(_base_dir(), "models")
-    defaults = {
+    write_env({
         "DEFAULT_MODE": "offline",
         # PhoWhisper (VinAI) for VI + standard Whisper for EN.
         "STT_ENGINE": "phowhisper",
         "TTS_ENGINE": "piper",
         "OFFLINE_NMT_MODEL_DIR": os.path.join(models, "nllb-200-distilled-600M-ct2-int8"),
-        "OFFLINE_STT_MODEL_DIR": os.path.join(models, "whisper-small"),
-        # PhoWhisper VI model (CT2) shipped next to the exe.
         "PHOWHISPER_MODEL_DIR": os.path.join(models, "phowhisper-large-ct2"),
         # EN half of phowhisper: reuse the local whisper-small CT2 dir (offline,
         # no HuggingFace download at runtime).
         "WHISPER_EN_MODEL": os.path.join(models, "whisper-small"),
         "PIPER_MODELS_DIR": os.path.join(models, "tts"),
-    }
-    for key, value in defaults.items():
-        os.environ.setdefault(key, value)
+    })
+    return True
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="OpenNezt backend (offline, self-contained).")
-    ap.add_argument("--host", default=os.environ.get("HOST", "0.0.0.0"))
-    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
-    args = ap.parse_args()
-
-    # Set env TRƯỚC khi import app (config đọc env lúc import).
-    _apply_offline_defaults()
+    # Tạo .env TRƯỚC khi import app (config đọc .env lúc import).
+    first_run = _ensure_env()
 
     import uvicorn
 
-    from app.main import app  # import sau khi env đã sẵn
+    from app.core.config import settings
+    from app.main import app  # import sau khi .env đã sẵn
+
+    ap = argparse.ArgumentParser(description="OpenNezt backend (offline, self-contained).")
+    ap.add_argument("--host", default=settings.host)
+    ap.add_argument("--port", type=int, default=settings.port)
+    args = ap.parse_args()
+
+    if first_run:
+        import threading
+        import webbrowser
+
+        url = f"http://localhost:{args.port}/setup"
+        threading.Timer(2.0, webbrowser.open, [url]).start()
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
