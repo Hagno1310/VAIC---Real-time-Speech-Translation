@@ -166,15 +166,21 @@ translates the whole segment as one unit, because splitting on "." breaks
 decimals like `2.5` ("two point five"). Do NOT reintroduce sentence-splitting in
 the source/NMT path (there is no `text_utils.py` / `_nmt_buffer` anymore).
 
-### STT hallucination guard (`core/audio_utils.py`)
-Whisper hallucinates canned text ("Thank you.", "Let's go!", "Ghiền Mì Gõ") on
-silence. `CloudSTTProvider.transcribe` calls `is_silence(wav)` (normalized RMS +
-duration vs `settings.stt_silence_rms` / `stt_min_speech_ms`) and **never sends a
-silent/too-short window to Groq** — it yields an empty final instead.
-`looks_like_hallucination()` drops exact canned phrases as a backstop. An empty
-final is skipped silently (no `error`, nothing stored), so silence never pollutes
-the transcript/history. The STT `language` is forced to the session source lang
-(no auto-detect) — a device must speak its configured language.
+### STT hallucination + echo guards (`core/audio_utils.py`, `groq_client.py`)
+Whisper turns non-speech into confident canned text ("Cảm ơn các bạn đã theo dõi",
+"Ghiền Mì Gõ") — measured on pure noise, Groq's `no_speech_prob` stays ~0.2-0.45,
+so it can NOT be trusted. Layers, in order (cloud + phowhisper providers):
+1. `is_silence(wav)` — cheap RMS/duration gate (`STT_SILENCE_RMS`, `STT_MIN_SPEECH_MS`).
+2. `speech_only(wav)` — **Silero VAD** (bundled with faster-whisper) keeps only
+   detected speech; no speech → empty final. Knob: `STT_VAD_THRESHOLD`. Falls back
+   to passthrough when faster-whisper is absent (deploy image).
+3. **Language gate** (`groq_client.transcribe_audio`): Whisper runs with
+   auto-detect and a window detected as the OTHER paired language is dropped.
+   Forcing the language made Whisper "translate" the peer device's TTS (picked
+   up by the speaker's open mic in a shared room) back into the source language
+   → endless drifting echo loop. Unknown detections retry with forced language.
+4. `looks_like_hallucination()` — canned-phrase/marker backstop.
+An empty final is skipped silently (no `error`, nothing stored).
 
 ## Lobby + 1:1 room pairing (LAN) — `app/ws/rooms.py`
 
@@ -208,7 +214,11 @@ full NLLB+Whisper+Piper load inside their turn (~13s measured). `main.py`'s
 lifespan fires `run_warmup()` as a **background task** — startup completes and
 `/ws` accepts connections immediately; a client connecting mid-warm just waits on
 the same cache entry. Failures are logged and swallowed, never fatal. Disable
-with `WARMUP_ON_STARTUP=false`.
+with `WARMUP_ON_STARTUP=false`. Silero VAD is warmed in **every** mode (importing
+faster-whisper alone is ~11-15s cold). Readiness is exposed to clients:
+`welcome.serverReady` + a `server.ready` broadcast when warmup ends; the Meeting
+screen shows a "preparing" overlay (mic opened + server ready) before allowing
+the first turn.
 
 **Gotcha:** the cached getters only build a wrapper — `WhisperEngine.__init__`
 sets `_model = None` and `PiperEngine` holds an empty `_voices` dict. Warmup must

@@ -49,6 +49,7 @@ const KNOWN_EVENTS: ReadonlySet<string> = new Set<ServerEvent['type']>([
   'session.ended',
   'error',
   'welcome',
+  'server.ready',
   'lobby',
   'invite.incoming',
   'invite.declined',

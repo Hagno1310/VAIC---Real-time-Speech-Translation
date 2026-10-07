@@ -76,6 +76,8 @@ export interface TranslatorSlice {
   // -- Lobby / ghép phòng 1↔1 (chat nội bộ LAN) ---------------------------
   /** Id do server cấp cho thiết bị này (sau `hello`). */
   myClientId: string | null;
+  /** Backend đã warmup xong (model + VAD) — màn họp chờ cờ này trước khi cho nói. */
+  serverReady: boolean;
   /** Tên hiển thị của thiết bị này trong lobby. */
   myName: string;
   /** Các thiết bị khác đang online cùng backend. */
@@ -345,7 +347,10 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
 
       // -- Lobby / ghép phòng 1↔1 -----------------------------------------
       case 'welcome':
-        set({ myClientId: event.data.clientId });
+        set({ myClientId: event.data.clientId, serverReady: event.data.serverReady !== false });
+        break;
+      case 'server.ready':
+        set({ serverReady: true });
         break;
       case 'lobby':
         set({ devices: event.data.devices });
@@ -414,6 +419,7 @@ export const createTranslatorSlice: StateCreator<RootStore, [], [], TranslatorSl
     audioCue: null,
 
     myClientId: null,
+    serverReady: false,
     myName: 'Thiết bị của tôi',
     devices: [],
     room: null,

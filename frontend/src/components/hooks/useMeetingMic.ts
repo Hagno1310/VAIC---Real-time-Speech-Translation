@@ -30,6 +30,8 @@ const NATIVE_SEG_MS = 4000;
 const IS_WEB = Platform.OS === 'web';
 
 export interface MeetingMic {
+  /** Micro đã mở sẵn (quyền + bộ thu) — bấm nói là thu ngay, không mất đầu câu. */
+  ready: boolean;
   recording: boolean;
   error: string | null;
   start: (speaker: Speaker) => Promise<void>;
@@ -44,6 +46,7 @@ export function useMeetingMic(): MeetingMic {
   const commitSegment = useStore((s) => s.commitSegment);
   const endTurn = useStore((s) => s.endTurn);
 
+  const [ready, setReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,7 +120,7 @@ export function useMeetingMic(): MeetingMic {
       setError(null);
       try {
         if (IS_WEB) {
-          webRef.current = new WebMicRecorder();
+          if (!webRef.current) webRef.current = new WebMicRecorder();
           // VAD phát hiện biên cụm → chốt cụm (audio.chunk).
           await webRef.current.start(() => void cutRef.current());
         } else {
@@ -158,8 +161,7 @@ export function useMeetingMic(): MeetingMic {
 
     let finalWav: string | null = null;
     if (IS_WEB) {
-      finalWav = (await webRef.current?.stop()) ?? null;
-      webRef.current = null;
+      finalWav = (await webRef.current?.stop()) ?? null; // micro vẫn mở cho lượt sau
     } else {
       await flushNative(false);
       if (pcmChunksRef.current.length > 0) {
@@ -169,16 +171,38 @@ export function useMeetingMic(): MeetingMic {
     if (finalWav) endTurn(speakerRef.current, finalWav);
   }, [flushNative, endTurn]);
 
-  // Dọn khi rời màn hình.
-  useEffect(
-    () => () => {
+  // Vào màn họp: mở sẵn micro (xin quyền + dựng bộ thu) để lượt nói đầu không
+  // phải chờ. Rời màn: giải phóng micro.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (IS_WEB) {
+          const rec = webRef.current ?? new WebMicRecorder();
+          webRef.current = rec;
+          await rec.open();
+        } else {
+          const perm = await AudioModule.requestRecordingPermissionsAsync();
+          if (!perm.granted) {
+            if (!cancelled) setError('Không có quyền micro. Kiểm tra cài đặt quyền của app.');
+            return;
+          }
+          await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true });
+        }
+        if (!cancelled) setReady(true);
+      } catch (err: any) {
+        if (!cancelled) setError('Không truy cập được micro: ' + (err?.message ?? String(err)));
+      }
+    })();
+    return () => {
+      cancelled = true;
       liveRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
-      if (IS_WEB) void webRef.current?.stop();
+      if (IS_WEB) void webRef.current?.close();
       else recorder.stop().catch(() => undefined);
-    },
-    [recorder],
-  );
+      webRef.current = null;
+    };
+  }, [recorder]);
 
-  return { recording, error, start, cut, stop };
+  return { ready, recording, error, start, cut, stop };
 }

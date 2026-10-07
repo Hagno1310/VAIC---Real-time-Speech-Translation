@@ -97,6 +97,9 @@ export interface RttDict {
     readingAloud: string;
     talkActive: string;
     talkIdle: string;
+    preparing: string;
+    prepMic: string;
+    prepServer: string;
     hintWeb: string;
     hintNative: string;
     close: string;
@@ -199,6 +202,9 @@ export const rttText: Record<UiLang, RttDict> = {
       readingAloud: 'Đang đọc to bản dịch…',
       talkActive: 'Đang nói… (thả để gửi)',
       talkIdle: 'Nhấn giữ để nói',
+      preparing: 'Đang chuẩn bị phiên dịch…',
+      prepMic: 'Mở micro',
+      prepServer: 'Nạp mô hình nhận dạng giọng nói',
       hintWeb: 'Phím tắt: Space giữ để nói · H mở lịch sử · Esc đóng',
       hintNative: 'Giữ nút để nói, thả ra để gửi bản dịch.',
       close: 'Đóng',
@@ -298,6 +304,9 @@ export const rttText: Record<UiLang, RttDict> = {
       readingAloud: 'Reading the translation aloud…',
       talkActive: 'Speaking… (release to send)',
       talkIdle: 'Hold to speak',
+      preparing: 'Preparing the interpreter…',
+      prepMic: 'Opening the microphone',
+      prepServer: 'Loading the speech models',
       hintWeb: 'Shortcuts: hold Space to speak · H opens history · Esc closes',
       hintNative: 'Hold the button to speak, release to send the translation.',
       close: 'Close',

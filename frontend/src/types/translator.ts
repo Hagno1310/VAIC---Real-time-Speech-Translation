@@ -202,7 +202,14 @@ export interface ErrorEvent {
 // -- Lobby / ghép phòng 1↔1 -------------------------------------------------
 export interface WelcomeEvent {
   type: 'welcome';
-  data: { clientId: string };
+  /** `serverReady` = backend đã nạp xong model/VAD (thiếu ở backend cũ → coi như sẵn sàng). */
+  data: { clientId: string; serverReady?: boolean };
+}
+
+/** Backend vừa warmup xong (gửi cho mọi client đang kết nối). */
+export interface ServerReadyEvent {
+  type: 'server.ready';
+  data: Record<string, never>;
 }
 
 export interface LobbyEvent {
@@ -242,6 +249,7 @@ export type ServerEvent =
   | SessionEndedEvent
   | ErrorEvent
   | WelcomeEvent
+  | ServerReadyEvent
   | LobbyEvent
   | InviteIncomingEvent
   | InviteDeclinedEvent

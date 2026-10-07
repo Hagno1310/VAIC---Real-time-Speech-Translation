@@ -38,3 +38,12 @@ def test_noise_never_reaches_whisper():
         w.setnchannels(1), w.setsampwidth(2), w.setframerate(16000)
         w.writeframes((noise * 32767).astype("<i2").tobytes())
     assert speech_only(buf.getvalue()) is None  # loud, but no voice
+
+
+def test_peer_language_echo_is_rejected():
+    from app.providers.groq_client import spoken_in
+
+    assert spoken_in({"language": "Vietnamese"}, "vi") is True
+    assert spoken_in({"language": "English"}, "vi") is False  # peer TTS echo
+    assert spoken_in({"language": "english"}, "en") is True
+    assert spoken_in({"language": "Chinese"}, "vi") is None  # unsure -> forced retry

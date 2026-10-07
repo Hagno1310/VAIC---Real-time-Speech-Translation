@@ -179,10 +179,15 @@ export function MeetingScreen({ navigation }: TranslatorStackScreenProps<'Meetin
     if (!room && status === 'connected') navigation.navigate('Devices');
   }, [room, status, navigation]);
 
+  // Chỉ cho nói khi micro đã mở sẵn VÀ backend đã nạp xong model/VAD — nếu không
+  // câu đầu tiên vừa chậm vừa mất đoạn.
+  const serverReady = useStore((s) => s.serverReady);
+  const preparing = !mic.error && (!mic.ready || !serverReady);
+
   // Push-to-talk: bắt đầu/kết thúc một lượt nói.
   const startTalk = useCallback(() => {
-    if (!mic.recording) void mic.start(speaker);
-  }, [mic, speaker]);
+    if (!preparing && !mic.recording) void mic.start(speaker);
+  }, [mic, speaker, preparing]);
   const stopTalk = useCallback(() => {
     if (mic.recording) void mic.stop();
   }, [mic]);
@@ -450,10 +455,11 @@ export function MeetingScreen({ navigation }: TranslatorStackScreenProps<'Meetin
         <Pressable
           onPressIn={startTalk}
           onPressOut={stopTalk}
-          disabled={status !== 'connected'}
+          disabled={status !== 'connected' || preparing}
           className="flex-row items-center justify-center gap-3 rounded-full px-12 py-5"
           style={{
-            backgroundColor: status !== 'connected' ? TP.muted : speaking ? TP.red : TP.accent,
+            backgroundColor:
+              status !== 'connected' || preparing ? TP.muted : speaking ? TP.red : TP.accent,
           }}
         >
           <Mic size={24} color={speaking ? '#ffffff' : TP.black} />
@@ -461,7 +467,7 @@ export function MeetingScreen({ navigation }: TranslatorStackScreenProps<'Meetin
             className="text-lg font-bold"
             style={{ color: speaking ? '#ffffff' : TP.black }}
           >
-            {speaking ? t.meeting.talkActive : t.meeting.talkIdle}
+            {preparing ? t.meeting.preparing : speaking ? t.meeting.talkActive : t.meeting.talkIdle}
           </Text>
         </Pressable>
         {mic.error ? (
@@ -476,6 +482,31 @@ export function MeetingScreen({ navigation }: TranslatorStackScreenProps<'Meetin
           <Text className="text-[13px] text-tp-muted">{t.meeting.hintNative}</Text>
         )}
       </View>
+
+      {/* Màn chuẩn bị: chờ micro + backend sẵn sàng trước lượt nói đầu tiên */}
+      {preparing && (
+        <View
+          className="absolute inset-0 items-center justify-center gap-5 px-8"
+          style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
+        >
+          <ActivityIndicator color={TP.accent} size="large" />
+          <Text className="text-center text-xl font-semibold text-tp-text">{t.meeting.preparing}</Text>
+          <View className="gap-2">
+            {[
+              { done: mic.ready, label: t.meeting.prepMic },
+              { done: serverReady, label: t.meeting.prepServer },
+            ].map((step) => (
+              <Text
+                key={step.label}
+                className="text-[15px]"
+                style={{ color: step.done ? TP.accent : TP.text2 }}
+              >
+                {step.done ? '✓' : '…'} {step.label}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* Panel Lịch sử dịch — ngăn phải (màn rộng) / tấm trượt dưới (điện thoại).
           Nền mờ nhẹ để hero vẫn đọc được; chạm nền để đóng. */}
